@@ -2,38 +2,48 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>مولد امتحانات احترافي</title>
 
-<link rel="stylesheet" href="style.css">
+<title>نظام إنشاء امتحانات احترافي</title>
 
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.0.3/docx.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<style>
+body { font-family: Tahoma; background:#eee; }
+#editor { height:300px; background:#fff; }
+#preview { background:#fff; padding:20px; margin-top:20px;}
+</style>
 
 </head>
 
 <body>
 
-<div class="container">
+<h2>🎓 نظام امتحانات احترافي</h2>
 
-<h2>📄 مولد امتحانات احترافي</h2>
+<input type="file" id="excel">
 
-<input type="file" id="fileInput" accept=".xlsx">
+<input id="qCount" type="number" placeholder="عدد الأسئلة">
+<input id="formCount" type="number" placeholder="عدد النماذج">
 
-<input type="file" id="logoInput" accept="image/*">
+<button onclick="saveTemplate()">💾 حفظ القالب</button>
+<button onclick="loadTemplate()">📂 تحميل القالب</button>
 
-<input type="text" id="schoolName" placeholder="اسم المدرسة">
-<input type="text" id="subjectName" placeholder="اسم المادة">
+<div id="editor"></div>
 
-<input type="number" id="questionCount" placeholder="عدد الأسئلة" value="5">
-<input type="number" id="formCount" placeholder="عدد النماذج" value="2">
+<button onclick="generate()">⚡ توليد</button>
+<button onclick="exportPDF()">📄 PDF</button>
+<button onclick="exportWord()">📝 Word</button>
 
-<button onclick="generateExams()">إنشاء PDF</button>
+<div id="preview"></div>
 
-<div id="progress"></div>
-
-</div>
-
-<script src="script.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>
