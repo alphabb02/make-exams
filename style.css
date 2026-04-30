@@ -1,80 +1,40 @@
 body {
-    margin: 0;
-    font-family: "Cairo", sans-serif;
-    background: #f1f5f9;
+    margin:0;
+    font-family:Tahoma;
+    background:#f1f5f9;
 }
 
 .app {
-    display: flex;
-    height: 100vh;
+    display:flex;
+    height:100vh;
 }
 
-/* Sidebar */
 .sidebar {
-    width: 260px;
-    background: #0f172a;
-    color: white;
-    padding: 20px;
-    overflow-y: auto;
-}
-
-.sidebar h2 {
-    text-align: center;
-}
-
-.sidebar input,
-.sidebar select,
-.sidebar button {
-    width: 100%;
-    margin: 6px 0;
-    padding: 10px;
-    border-radius: 8px;
-    border: none;
-}
-
-.sidebar input,
-.sidebar select {
-    background: #1e293b;
-    color: white;
+    width:220px;
+    background:#1e293b;
+    color:white;
+    padding:15px;
 }
 
 .sidebar button {
-    background: #3b82f6;
-    color: white;
-    cursor: pointer;
+    width:100%;
+    margin:5px 0;
+    padding:8px;
+    background:#3b82f6;
+    border:none;
+    color:white;
 }
 
-.sidebar button:hover {
-    background: #2563eb;
+.canvas {
+    flex:1;
+    background:#e2e8f0;
+    padding:30px;
 }
 
-/* Main */
-.main {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-}
-
-/* Cards */
-.card {
-    background: white;
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-/* Editor */
-#editor {
-    height: 250px;
-}
-
-/* Preview */
-#preview {
-    width: 794px;
-    min-height: 1123px;
-    margin: auto;
-    padding: 40px;
-    background: white;
-    border: 1px solid #ddd;
+.block {
+    background:white;
+    padding:10px;
+    margin-bottom:10px;
+    border:1px dashed #ccc;
+    cursor:pointer;
 }
