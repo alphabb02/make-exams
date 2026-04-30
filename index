@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>مولد امتحانات احترافي</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>📄 مولد امتحانات احترافي</h2>
+
+<input type="file" id="fileInput" accept=".xlsx">
+
+<input type="file" id="logoInput" accept="image/*">
+
+<input type="text" id="schoolName" placeholder="اسم المدرسة">
+<input type="text" id="subjectName" placeholder="اسم المادة">
+
+<input type="number" id="questionCount" placeholder="عدد الأسئلة" value="5">
+<input type="number" id="formCount" placeholder="عدد النماذج" value="2">
+
+<button onclick="generateExams()">إنشاء PDF</button>
+
+<div id="progress"></div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
