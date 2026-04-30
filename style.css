@@ -1,0 +1,32 @@
+body {
+    font-family: "Tahoma";
+    background: #eef2f7;
+    text-align: center;
+}
+
+.container {
+    background: white;
+    padding: 20px;
+    margin: 40px auto;
+    width: 400px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px #ccc;
+}
+
+input, button {
+    width: 90%;
+    padding: 10px;
+    margin: 5px;
+}
+
+button {
+    background: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#progress {
+    margin-top: 10px;
+    color: green;
+}
