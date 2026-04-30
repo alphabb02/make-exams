@@ -1,119 +1,108 @@
 let questions = [];
-let logoBase64 = null;
+let usedQuestions = new Set();
 
-document.getElementById("fileInput").addEventListener("change", readExcel);
-document.getElementById("logoInput").addEventListener("change", readLogo);
+let quill = new Quill('#editor', {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            [{ font: [] }, { size: [] }],
+            ['bold', 'italic', 'underline'],
+            [{ color: [] }, { background: [] }],
+            [{ align: [] }],
+            ['image', 'code-block']
+        ]
+    }
+});
 
-function readExcel(e) {
-    let file = e.target.files[0];
+document.getElementById("excel").addEventListener("change", e => {
+
     let reader = new FileReader();
 
-    reader.onload = function(e) {
-        let data = new Uint8Array(e.target.result);
-        let workbook = XLSX.read(data, { type: 'array' });
-
-        let sheet = workbook.Sheets[workbook.SheetNames[0]];
+    reader.onload = ev => {
+        let wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
+        let sheet = wb.Sheets[wb.SheetNames[0]];
         questions = XLSX.utils.sheet_to_json(sheet);
-
-        alert("تم تحميل " + questions.length + " سؤال");
     };
 
-    reader.readAsArrayBuffer(file);
+    reader.readAsArrayBuffer(e.target.files[0]);
+});
+
+function saveTemplate(){
+    localStorage.setItem("template", quill.root.innerHTML);
 }
 
-function readLogo(e) {
-    let file = e.target.files[0];
-    let reader = new FileReader();
-
-    reader.onload = () => logoBase64 = reader.result;
-    reader.readAsDataURL(file);
+function loadTemplate(){
+    quill.root.innerHTML = localStorage.getItem("template") || "";
 }
 
-function shuffle(arr) {
-    return arr.sort(() => Math.random() - 0.5);
+function shuffle(a){
+    return a.sort(()=>Math.random()-0.5);
 }
 
-function generateExams() {
+function pickQuestions(count){
+    let available = questions.filter(q => !usedQuestions.has(q.Question));
+    let selected = shuffle(available).slice(0, count);
+    selected.forEach(q => usedQuestions.add(q.Question));
+    return selected;
+}
 
-    const { jsPDF } = window.jspdf;
+function generate(){
 
-    let qCount = +document.getElementById("questionCount").value;
+    let qCount = +document.getElementById("qCount").value;
     let fCount = +document.getElementById("formCount").value;
 
-    let school = document.getElementById("schoolName").value;
-    let subject = document.getElementById("subjectName").value;
+    let template = quill.root.innerHTML;
 
-    if (!questions.length) return alert("ارفع ملف Excel");
+    let finalHTML = "";
 
-    let doc = new jsPDF();
+    for(let f=0; f<fCount; f++){
 
-    for (let f = 0; f < fCount; f++) {
+        let qs = pickQuestions(qCount);
 
-        let formName = String.fromCharCode(65 + f);
-        let y = 20;
+        let content = `<h3>نموذج ${String.fromCharCode(65+f)}</h3>`;
 
-        // Header
-        if (logoBase64) doc.addImage(logoBase64, 'PNG', 10, 5, 20, 20);
+        qs.forEach((q,i)=>{
 
-        doc.setFontSize(14);
-        doc.text(school, 105, 10, { align: "center" });
-        doc.text(subject, 105, 18, { align: "center" });
-        doc.text("نموذج " + formName, 180, 10);
+            content += `<p>${i+1}) ${q.Question}</p>`;
 
-        let selected = shuffle([...questions]).slice(0, qCount);
-        let answers = [];
-
-        selected.forEach((q, i) => {
-
-            let type = q["Type"] || "MCQ";
-
-            doc.text(`${i+1}) ${q["Question"]}`, 10, y);
-            y += 7;
-
-            if (type === "MCQ") {
-
-                let options = [q["A"], q["B"], q["C"], q["D"]];
-                let mixed = shuffle([...options]);
-
-                let correctIndex = mixed.indexOf(q["Answer"]);
-
-                mixed.forEach((opt, j) => {
-                    doc.text(`${String.fromCharCode(65+j)}) ${opt}`, 15, y);
-                    y += 6;
+            if(q.Type === "TF"){
+                content += `<p>أ) صح ب) خطأ</p>`;
+            }
+            else{
+                let ops = shuffle([q.A,q.B,q.C,q.D]);
+                ops.forEach((o,j)=>{
+                    content += `<p>${String.fromCharCode(65+j)}) ${o}</p>`;
                 });
-
-                answers.push(`${i+1}-${String.fromCharCode(65+correctIndex)}`);
-
-            } else if (type === "TF") {
-
-                doc.text("أ) صح", 15, y);
-                doc.text("ب) خطأ", 60, y);
-                y += 6;
-
-                answers.push(`${i+1}-${q["Answer"]}`);
-            }
-
-            y += 5;
-
-            if (y > 270) {
-                doc.addPage();
-                y = 20;
             }
         });
 
-        // صفحة الإجابات
-        doc.addPage();
-        doc.text("نموذج الإجابة - " + formName, 10, 10);
+        let page = template
+            .replace("{{questions}}", content)
+            .replace("{{form}}", String.fromCharCode(65+f))
+            .replace("{{date}}", new Date().toLocaleDateString());
 
-        answers.forEach((a, i) => {
-            doc.text(a, 10, 20 + (i * 6));
-        });
-
-        if (f < fCount - 1) doc.addPage();
-
-        document.getElementById("progress").innerText =
-            "تم إنشاء نموذج " + formName;
+        finalHTML += page + "<div style='page-break-after:always'></div>";
     }
 
-    doc.save("All_Exams.pdf");
+    document.getElementById("preview").innerHTML = finalHTML;
+}
+
+function exportPDF(){
+    html2pdf().from(document.getElementById("preview")).save("exam.pdf");
+}
+
+async function exportWord(){
+
+    const { Document, Packer, Paragraph } = window.docx;
+
+    let lines = document.getElementById("preview").innerText.split("\n");
+
+    let doc = new Document({
+        sections:[{
+            children: lines.map(l=> new Paragraph(l))
+        }]
+    });
+
+    let blob = await Packer.toBlob(doc);
+    saveAs(blob,"exam.docx");
 }
