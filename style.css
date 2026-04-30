@@ -1,32 +1,80 @@
 body {
-    font-family: "Tahoma";
-    background: #eef2f7;
+    margin: 0;
+    font-family: "Cairo", sans-serif;
+    background: #f1f5f9;
+}
+
+.app {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    background: #0f172a;
+    color: white;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.sidebar h2 {
     text-align: center;
 }
 
-.container {
-    background: white;
-    padding: 20px;
-    margin: 40px auto;
-    width: 400px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px #ccc;
-}
-
-input, button {
-    width: 90%;
+.sidebar input,
+.sidebar select,
+.sidebar button {
+    width: 100%;
+    margin: 6px 0;
     padding: 10px;
-    margin: 5px;
+    border-radius: 8px;
+    border: none;
 }
 
-button {
-    background: #28a745;
+.sidebar input,
+.sidebar select {
+    background: #1e293b;
     color: white;
-    border: none;
+}
+
+.sidebar button {
+    background: #3b82f6;
+    color: white;
     cursor: pointer;
 }
 
-#progress {
-    margin-top: 10px;
-    color: green;
+.sidebar button:hover {
+    background: #2563eb;
+}
+
+/* Main */
+.main {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Cards */
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Editor */
+#editor {
+    height: 250px;
+}
+
+/* Preview */
+#preview {
+    width: 794px;
+    min-height: 1123px;
+    margin: auto;
+    padding: 40px;
+    background: white;
+    border: 1px solid #ddd;
 }
