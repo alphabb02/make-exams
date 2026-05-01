@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>مولّد نماذج الامتحانات</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&family=Amiri:wght@400;700&display=swap');
 
@@ -820,24 +819,41 @@ function processData(raw) {
 }
 
 function autoMap(headers) {
-  const lh = headers.map(h => h.toLowerCase());
-  const try_ = (arr) => headers[arr.find(k => lh.findIndex(h => h.includes(k)) !== -1) !== undefined ? lh.findIndex(h => h.includes(arr.find(k => lh.findIndex(h2=>h2.includes(k))!==-1))) : -1] || '';
-  const find = (arr) => { for(const k of arr){ const i=lh.findIndex(h=>h.includes(k)); if(i!==-1) return headers[i]; } return ''; };
-  colMap.q = find(['سؤال','question','q','نص']);
-  colMap.a = find(['أ','ا','a','خيار أ','option a','choice a']);
-  colMap.b = find(['ب','b','خيار ب','option b']);
-  colMap.c = find(['ج','c','خيار ج','option c']);
-  colMap.d = find(['د','d','خيار د','option d']);
-  colMap.ans = find(['إجابة','answer','correct','صحيح','الإجابة']);
-  colMap.topic = find(['محور','موضوع','topic','unit','وحدة','فصل']);
-  colMap.diff = find(['صعوبة','difficulty','level']);
-  // fallback positional
-  if (!colMap.q && headers[0]) colMap.q = headers[0];
-  if (!colMap.a && headers[1]) colMap.a = headers[1];
-  if (!colMap.b && headers[2]) colMap.b = headers[2];
-  if (!colMap.c && headers[3]) colMap.c = headers[3];
-  if (!colMap.d && headers[4]) colMap.d = headers[4];
+  const lh = headers.map(h => String(h||'').trim().toLowerCase());
+  const findExact = (targets) => {
+    for (const t of targets) {
+      const i = lh.findIndex(h => h === t.toLowerCase());
+      if (i !== -1) return headers[i];
+    }
+    return '';
+  };
+  const findContains = (targets) => {
+    for (const t of targets) {
+      const i = lh.findIndex(h => h.includes(t.toLowerCase()));
+      if (i !== -1) return headers[i];
+    }
+    return '';
+  };
+
+  // Exact match first (handles Question,A,B,C,D,Answer perfectly)
+  colMap.q   = findExact(['Question','question','سؤال','نص السؤال']) || findContains(['question','سؤال','نص']);
+  colMap.a   = findExact(['A','a','أ','ا','Choice A','Option A']) || findContains(['choice a','option a','خيار أ']);
+  colMap.b   = findExact(['B','b','ب','Choice B','Option B']) || findContains(['choice b','option b','خيار ب']);
+  colMap.c   = findExact(['C','c','ج','Choice C','Option C']) || findContains(['choice c','option c','خيار ج']);
+  colMap.d   = findExact(['D','d','د','Choice D','Option D']) || findContains(['choice d','option d','خيار د']);
+  colMap.ans = findExact(['Answer','answer','Correct','correct','الإجابة','إجابة','الإجابة الصحيحة']) || findContains(['answer','correct','إجابة','صحيح']);
+  colMap.topic = findExact(['Topic','topic','Unit','unit','محور','وحدة','فصل']) || findContains(['topic','unit','محور','وحدة']);
+  colMap.diff  = findExact(['Difficulty','difficulty','Level','level','صعوبة']) || findContains(['difficulty','level','صعوبة']);
+
+  // Positional fallback if nothing found
+  if (!colMap.q   && headers[0]) colMap.q   = headers[0];
+  if (!colMap.a   && headers[1]) colMap.a   = headers[1];
+  if (!colMap.b   && headers[2]) colMap.b   = headers[2];
+  if (!colMap.c   && headers[3]) colMap.c   = headers[3];
+  if (!colMap.d   && headers[4]) colMap.d   = headers[4];
   if (!colMap.ans && headers[5]) colMap.ans = headers[5];
+
+  console.log('Column mapping:', colMap);
 }
 
 function updateStats(headers) {
@@ -1048,91 +1064,281 @@ function renderAllAnswerKeys() {
   }).join('');
 }
 
-// ─── EXPORT PDF ───
-async function exportAllPDF() {
-  showToast('⏳ جاري تصدير PDF...', '');
-  const { jsPDF } = window.jspdf;
-  // Create a printable page and trigger print
-  const w = window.open('', '_blank');
-  let html = `<!DOCTYPE html><html dir="rtl"><head>
-    <meta charset="UTF-8">
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap');
-      body{font-family:'Cairo',sans-serif;background:#fff;color:#1a1a2e;direction:rtl;margin:0;}
-      .page{padding:2.5rem;max-width:800px;margin:0 auto;page-break-after:always;}
-      @media print{.page{page-break-after:always;}}
-      .q-options{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;}
-    </style>
-  </head><body>`;
-  models.forEach((m,i) => {
-    html += `<div class="page">${renderExamPaper(m,i).replace(/class="exam-paper"/g,'').replace(/style="background:#fff;color:#1a1a2e;/g,'style="')}</div>`;
-    if (opts.answerKey) {
-      const grid = m.questions.map((q,qi) => `<div style="display:inline-block;background:#f0f4ff;border:1px solid #d0d8f0;border-radius:8px;padding:8px;text-align:center;width:60px;margin:4px;"><div style="font-size:11px;color:#6b7280;">${qi+1}</div><div style="font-size:20px;font-weight:700;color:#1e3a8a;">${q.correctLabel}</div></div>`).join('');
-      html += `<div class="page"><h2 style="border-bottom:2px double #1a1a2e;padding-bottom:.5rem;font-family:'Amiri',serif;">ورقة إجابات — ${m.name}</h2><div style="margin-top:1rem;">${grid}</div></div>`;
+// ─── SHARED: build full A4 HTML for one model ───
+function buildA4Html(model, includeAnswerKey) {
+  const fs = 13; // 13px ≈ 10pt — standard exam font
+  const hBg = design.headerBg;
+  const hTx = design.headerText;
+  const subj = examCfg.subject || '';
+  const inst  = examCfg.institution || '';
+
+  const headerHtml = `
+    <div style="background:${hBg};color:${hTx};padding:14px 20px;text-align:center;margin-bottom:12px;">
+      <div style="font-size:13pt;font-weight:700;">${inst}</div>
+      <div style="font-size:17pt;font-weight:900;font-family:'Amiri',serif;margin:4px 0;">امتحان مادة: ${subj}</div>
+      <div style="font-size:10pt;opacity:.9;">الزمن: ${examCfg.duration} دقيقة &nbsp;|&nbsp; الدرجة: ${examCfg.grade} &nbsp;|&nbsp; ${examCfg.date||''}</div>
+      <div style="margin-top:6px;display:inline-block;background:rgba(255,255,255,.25);padding:2px 18px;border-radius:20px;font-size:11pt;font-weight:700;">النموذج: ${model.letter}</div>
+    </div>`;
+
+  const studentHtml = `
+    <table style="width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:10px;">
+      <tr>
+        <td style="padding:4px 8px;border-bottom:1px solid #333;width:50%;">اسم الطالب: _______________________</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #333;">رقم الجلوس: ________________</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 8px;border-bottom:1px solid #333;">الشعبة / الفصل: __________________</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #333;">التاريخ: ${examCfg.date||'_______________'}</td>
+      </tr>
+    </table>`;
+
+  const instrHtml = examCfg.instructions
+    ? `<div style="background:#f5f7ff;border:1px solid #c8d0f0;border-radius:6px;padding:7px 12px;margin-bottom:10px;font-size:9.5pt;color:#333;line-height:1.7;"><strong>التعليمات:</strong> ${examCfg.instructions}</div>`
+    : '';
+
+  const questionsHtml = model.questions.map((item, i) => {
+    const opts2 = item.choices.map(c =>
+      `<td style="width:50%;padding:2px 8px;font-size:9.5pt;color:#333;vertical-align:top;">
+        <span style="font-weight:700;color:#1a1a2e;">${c.label})</span> ${c.val}
+      </td>`
+    );
+    const rows = [];
+    for (let r=0; r<opts2.length; r+=2) {
+      rows.push(`<tr>${opts2[r]||'<td></td>'}${opts2[r+1]||'<td></td>'}</tr>`);
     }
-  });
-  html += '</body></html>';
-  w.document.write(html);
-  w.document.close();
-  setTimeout(() => w.print(), 1500);
-  showToast('✅ فُتحت نافذة الطباعة', 'success');
+    return `
+      <div style="margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid #dde2ee;page-break-inside:avoid;">
+        <div style="font-size:10.5pt;line-height:1.75;color:#1a1a2e;margin-bottom:4px;">
+          <strong style="color:${hBg};">${i+1}.</strong> ${item.text}
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin-right:12px;">${rows.join('')}</table>
+      </div>`;
+  }).join('');
+
+  // Page number via CSS counter
+  const pageCounterStyle = `
+    @page { size: A4; margin: 18mm 20mm 20mm 20mm; }
+    @page { @bottom-center { content: "صفحة " counter(page) " من " counter(pages); font-family:'Cairo',sans-serif; font-size:9pt; color:#666; } }
+    body { counter-reset: page; }
+  `;
+
+  let answerKeyHtml = '';
+  if (includeAnswerKey) {
+    const cells = model.questions.map((q,i) =>
+      `<td style="text-align:center;border:1px solid #c0c8e0;padding:6px 4px;width:52px;">
+        <div style="font-size:8.5pt;color:#666;">${i+1}</div>
+        <div style="font-size:13pt;font-weight:700;color:${hBg};">${q.correctLabel}</div>
+      </td>`
+    );
+    const keyRows = [];
+    for (let r=0; r<cells.length; r+=10) keyRows.push(`<tr>${cells.slice(r,r+10).join('')}</tr>`);
+    answerKeyHtml = `
+      <div style="page-break-before:always;padding-top:12px;">
+        <div style="background:${hBg};color:${hTx};padding:10px 16px;text-align:center;margin-bottom:14px;border-radius:4px;">
+          <strong style="font-size:13pt;">ورقة الإجابات الصحيحة — ${model.name}</strong>
+          <div style="font-size:10pt;opacity:.85;">مادة: ${subj} | ${model.questions.length} سؤال</div>
+        </div>
+        <table style="border-collapse:collapse;width:100%;">${keyRows.join('')}</table>
+      </div>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap');
+    ${pageCounterStyle}
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Cairo',sans-serif; background:#fff; color:#1a1a2e; direction:rtl; font-size:${fs}px; }
+    @media print {
+      body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    }
+  </style>
+</head>
+<body>
+  ${headerHtml}
+  ${studentHtml}
+  ${instrHtml}
+  ${questionsHtml}
+  ${answerKeyHtml}
+</body>
+</html>`;
 }
 
-// ─── EXPORT WORD (HTML → blob) ───
-function exportAllWord() {
-  showToast('⏳ جاري إنشاء ملف Word...', '');
-  let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>نماذج الامتحان</title>
-  <style>
-    body{font-family:Arial,sans-serif;direction:rtl;}
-    h1{font-size:18pt;text-align:center;}
-    h2{font-size:14pt;}
-    table{width:100%;}
-    td{padding:4px 8px;}
-    .page-break{page-break-after:always;}
-  </style></head><body dir="rtl">`;
-  models.forEach((m, mi) => {
-    html += `<div class="page-break"><h1 style="text-align:center;">${examCfg.institution}</h1>
-    <h2 style="text-align:center;">امتحان مادة: ${examCfg.subject} — النموذج: ${m.letter}</h2>
-    <p style="text-align:center;">الزمن: ${examCfg.duration} دق | الدرجة: ${examCfg.grade} | التاريخ: ${examCfg.date}</p>
-    <hr>
-    <table><tr><td style="width:50%">اسم الطالب: ________________</td><td>رقم الجلوس: ____________</td></tr></table><hr>`;
-    m.questions.forEach((q, qi) => {
-      html += `<p><strong>${qi+1}.</strong> ${q.text}</p><table><tr>`;
-      q.choices.forEach((c,ci) => {
-        html += `<td style="width:50%">${c.label}) ${c.val}</td>`;
-        if (ci===1) html += '</tr><tr>';
-      });
-      html += '</tr></table>';
-    });
-    html += '</div>';
-    if(opts.answerKey) {
-      html += `<div class="page-break"><h2>ورقة إجابات — ${m.name}</h2><table>`;
-      m.questions.forEach((q,qi) => { html += `<td style="text-align:center;border:1px solid #ccc;padding:6px;width:60px;">${qi+1}<br><strong>${q.correctLabel}</strong></td>`; if((qi+1)%10===0) html += '</tr><tr>'; });
-      html += '</tr></table></div>';
-    }
+// ─── EXPORT PDF ZIP ───
+async function exportAllPDF() {
+  if (!models.length) { showToast('لا توجد نماذج بعد', 'error'); return; }
+  showToast('⏳ جاري إنشاء ملفات PDF...', '');
+  const zip = new JSZip();
+  const folder = zip.folder(`نماذج_${examCfg.subject||'امتحان'}`);
+  const windows = [];
+
+  // Open each model in a hidden iframe, print to PDF is manual — instead we package HTML files
+  // that are print-ready A4 (user opens and prints/saves as PDF from browser)
+  // For true ZIP with PDF we encode each as HTML-in-ZIP (print-ready)
+  models.forEach((m, i) => {
+    const html = buildA4Html(m, opts.answerKey);
+    folder.file(`${m.name}.html`, html);
   });
-  html += '</body></html>';
-  const blob = new Blob(['\ufeff', html], {type:'application/msword'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `نماذج_${examCfg.subject}_${examCfg.date||'امتحان'}.doc`;
+
+  // Also add a combined file
+  let combinedHtml = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap');
+    @page{size:A4;margin:18mm 20mm 20mm 20mm;}
+    @page{@bottom-center{content:"صفحة " counter(page);font-family:'Cairo',sans-serif;font-size:9pt;color:#666;}}
+    body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#1a1a2e;}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+    .model-section{page-break-after:always;}
+  </style></head><body>`;
+  models.forEach((m,i) => {
+    const inner = buildA4Html(m, opts.answerKey)
+      .replace(/<!DOCTYPE.*?<body[^>]*>/s,'')
+      .replace(/<\/body>.*$/s,'');
+    combinedHtml += `<div class="model-section">${inner}</div>`;
+  });
+  combinedHtml += '</body></html>';
+  folder.file(`كل_النماذج_مجمعة.html`, combinedHtml);
+
+  const blob = await zip.generateAsync({type:'blob'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `نماذج_PDF_${examCfg.subject||'امتحان'}.zip`;
   a.click();
-  showToast('✅ تم تنزيل ملف Word', 'success');
+  showToast('✅ تم تنزيل ZIP — افتح كل ملف HTML واطبعه كـ PDF', 'success');
+}
+
+// ─── EXPORT WORD ZIP ───
+async function exportAllWord() {
+  if (!models.length) { showToast('لا توجد نماذج بعد', 'error'); return; }
+  showToast('⏳ جاري إنشاء ملفات Word...', '');
+  const zip = new JSZip();
+  const folder = zip.folder(`نماذج_${examCfg.subject||'امتحان'}`);
+  const hBg = design.headerBg;
+  const hTx = design.headerText;
+
+  models.forEach((m) => {
+    const questionsDocHtml = m.questions.map((item, i) => {
+      const pairs = [];
+      for (let r=0; r<item.choices.length; r+=2) {
+        const c1 = item.choices[r];
+        const c2 = item.choices[r+1];
+        pairs.push(`<tr>
+          <td width="50%" style="padding:2pt 6pt;font-size:10pt;">${c1?`<b>${c1.label})</b> ${c1.val}`:''}</td>
+          <td width="50%" style="padding:2pt 6pt;font-size:10pt;">${c2?`<b>${c2.label})</b> ${c2.val}`:''}</td>
+        </tr>`);
+      }
+      return `<p style="margin:0 0 4pt 0;font-size:10.5pt;line-height:1.75;"><b style="color:${hBg};">${i+1}.</b> ${item.text}</p>
+      <table width="100%" style="margin-right:10pt;border-collapse:collapse;margin-bottom:8pt;">${pairs.join('')}</table>
+      <hr style="border:none;border-top:1px solid #dde;margin:0 0 6pt 0;">`;
+    }).join('');
+
+    let ansKeyHtml = '';
+    if (opts.answerKey) {
+      const cells = m.questions.map((q,i) =>
+        `<td style="text-align:center;border:1px solid #c0c8e0;padding:4pt;width:45pt;">
+          <div style="font-size:8pt;color:#666;">${i+1}</div>
+          <div style="font-size:13pt;font-weight:700;color:${hBg};">${q.correctLabel}</div>
+        </td>`
+      );
+      const keyRows = [];
+      for (let r=0; r<cells.length; r+=10) keyRows.push(`<tr>${cells.slice(r,r+10).join('')}</tr>`);
+      ansKeyHtml = `<br><br>
+        <div style="page-break-before:always;">
+          <h2 style="text-align:center;background:${hBg};color:${hTx};padding:8pt;font-size:13pt;">ورقة الإجابات — ${m.name}</h2>
+          <table style="border-collapse:collapse;width:100%;margin-top:12pt;">${keyRows.join('')}</table>
+        </div>`;
+    }
+
+    const docHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="utf-8">
+    <style>
+      @page Section1 {
+        size:21cm 29.7cm;
+        margin:18mm 20mm 20mm 20mm;
+        mso-header-margin:10mm;
+        mso-footer-margin:10mm;
+        mso-page-numbers:1;
+      }
+      div.Section1 { page:Section1; }
+      body { font-family:'Arial Unicode MS',Arial,sans-serif; direction:rtl; font-size:10pt; }
+      p { margin:0 0 3pt 0; }
+    </style>
+    </head>
+    <body dir="rtl">
+    <div class="Section1">
+      <div style="background:${hBg};color:${hTx};padding:10pt;text-align:center;margin-bottom:10pt;">
+        <div style="font-size:13pt;font-weight:700;">${examCfg.institution||''}</div>
+        <div style="font-size:17pt;font-weight:900;">امتحان مادة: ${examCfg.subject||''}</div>
+        <div style="font-size:10pt;">الزمن: ${examCfg.duration} دقيقة | الدرجة: ${examCfg.grade} | ${examCfg.date||''}</div>
+        <div style="font-size:11pt;font-weight:700;">النموذج: ${m.letter}</div>
+      </div>
+      <table width="100%" style="margin-bottom:8pt;"><tr>
+        <td width="50%" style="border-bottom:1pt solid #333;padding:3pt;font-size:10pt;">اسم الطالب: _______________________</td>
+        <td width="50%" style="border-bottom:1pt solid #333;padding:3pt;font-size:10pt;">رقم الجلوس: ________________</td>
+      </tr><tr>
+        <td style="border-bottom:1pt solid #333;padding:3pt;font-size:10pt;">الشعبة: __________________</td>
+        <td style="border-bottom:1pt solid #333;padding:3pt;font-size:10pt;">التاريخ: ${examCfg.date||'___'}</td>
+      </tr></table>
+      ${examCfg.instructions ? `<p style="background:#f5f7ff;border:1pt solid #c0c8e0;padding:5pt;font-size:9.5pt;margin-bottom:8pt;"><b>التعليمات:</b> ${examCfg.instructions}</p>` : ''}
+      ${questionsDocHtml}
+      ${ansKeyHtml}
+    </div>
+    </body></html>`;
+
+    folder.file(`${m.name}.doc`, '\ufeff' + docHtml);
+  });
+
+  const blob = await zip.generateAsync({type:'blob'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `نماذج_Word_${examCfg.subject||'امتحان'}.zip`;
+  a.click();
+  showToast('✅ تم تنزيل ZIP — كل نموذج في ملف Word منفصل', 'success');
 }
 
 // ─── EXPORT ANSWER KEYS ───
-function exportAnswerKeys() {
-  const w = window.open('','_blank');
-  let html = `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
-  <style>body{font-family:Arial;direction:rtl;padding:2rem;}.grid{display:flex;flex-wrap:wrap;gap:8px;}.item{border:1px solid #ccc;border-radius:6px;padding:8px;text-align:center;width:56px;}.page{page-break-after:always;padding:1rem;}</style>
-  </head><body>`;
+async function exportAnswerKeys() {
+  if (!models.length) { showToast('لا توجد نماذج بعد', 'error'); return; }
+  const zip = new JSZip();
+  const folder = zip.folder('أوراق_الإجابات');
+  const hBg = design.headerBg; const hTx = design.headerText;
+
   models.forEach(m => {
-    html += `<div class="page"><h2>ورقة إجابات — ${m.name} | ${examCfg.subject}</h2><div class="grid">`;
-    m.questions.forEach((q,i) => { html += `<div class="item"><div style="font-size:11px;color:#888">${i+1}</div><div style="font-size:20px;font-weight:700;color:#1e3a8a">${q.correctLabel}</div></div>`; });
-    html += '</div></div>';
+    const cells = m.questions.map((q,i) =>
+      `<td style="text-align:center;border:1px solid #c0c8e0;padding:8px 4px;width:52px;">
+        <div style="font-size:9pt;color:#666;margin-bottom:2px;">${i+1}</div>
+        <div style="font-size:15pt;font-weight:700;color:${hBg};">${q.correctLabel}</div>
+      </td>`
+    );
+    const rows = [];
+    for (let r=0; r<cells.length; r+=10) rows.push(`<tr>${cells.slice(r,r+10).join('')}</tr>`);
+    const html = `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+        @page{size:A4;margin:20mm;}
+        body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;}
+        @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+      </style></head><body>
+      <div style="background:${hBg};color:${hTx};padding:12px;text-align:center;margin-bottom:16px;border-radius:4px;">
+        <div style="font-size:14pt;font-weight:700;">${examCfg.institution||''}</div>
+        <div style="font-size:16pt;font-weight:900;">ورقة الإجابات — ${m.name}</div>
+        <div style="font-size:10pt;opacity:.9;">مادة: ${examCfg.subject||''} | ${m.questions.length} سؤال</div>
+      </div>
+      <table style="border-collapse:collapse;width:100%;">${rows.join('')}</table>
+    </body></html>`;
+    folder.file(`ورقة_إجابات_${m.name}.html`, html);
   });
-  html += '</body></html>';
-  w.document.write(html); w.document.close();
-  setTimeout(()=>w.print(), 1000);
+
+  const blob = await zip.generateAsync({type:'blob'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `أوراق_الإجابات_${examCfg.subject||'امتحان'}.zip`;
+  a.click();
+  showToast('✅ تم تنزيل أوراق الإجابات', 'success');
 }
 
 // ─── TOAST ───
