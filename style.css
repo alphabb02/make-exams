@@ -1,40 +1,27 @@
-body {
-    margin:0;
-    font-family:Tahoma;
-    background:#f1f5f9;
-}
+body{margin:0;font-family:Segoe UI;background:#f1f5f9}
+.app{display:grid;grid-template-columns:260px 1fr;height:100vh}
+.sidebar{background:#0f172a;color:white;padding:15px}
+.sidebar input,button{width:100%;margin:5px 0;padding:8px}
+.preview{padding:20px;overflow:auto}
 
-.app {
-    display:flex;
-    height:100vh;
+.exam-page{
+ width:210mm;min-height:297mm;
+ background:#fff;margin:auto 0 20px;
+ padding:25mm;position:relative;
+ box-shadow:0 0 10px rgba(0,0,0,.25)
 }
-
-.sidebar {
-    width:220px;
-    background:#1e293b;
-    color:white;
-    padding:15px;
+.header{text-align:center;font-size:13px}
+.footer{
+ position:absolute;bottom:10mm;
+ width:100%;text-align:center;font-size:12px
 }
+.question{margin-bottom:12px;cursor:move}
 
-.sidebar button {
-    width:100%;
-    margin:5px 0;
-    padding:8px;
-    background:#3b82f6;
-    border:none;
-    color:white;
+.modal{
+ display:none;position:fixed;inset:0;
+ background:rgba(0,0,0,.5);z-index:1000
 }
-
-.canvas {
-    flex:1;
-    background:#e2e8f0;
-    padding:30px;
-}
-
-.block {
-    background:white;
-    padding:10px;
-    margin-bottom:10px;
-    border:1px dashed #ccc;
-    cursor:pointer;
+.modal-content{
+ background:white;width:400px;
+ margin:60px auto;padding:20px;border-radius:8px
 }
