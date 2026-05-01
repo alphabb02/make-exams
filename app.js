@@ -10,17 +10,35 @@ let examInfo={
 };
 
 /* Excel */
-function loadExcel(file){
- const r=new FileReader();
- r.onload=e=>{
-  const wb=XLSX.read(e.target.result,{type:"binary"});
-  const sh=wb.Sheets[wb.SheetNames[0]];
-  questionBank=XLSX.utils.sheet_to_json(sh);
-  alert("تم تحميل بنك الأسئلة");
- };
- r.readAsBinaryString(file);
-}
+function loadExcel(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+        const workbook = XLSX.read(e.target.result, { type: "binary" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rawData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
+        questionBank = rawData.map(row => ({
+            id: row.ID || "",
+            question: row["Question"] || row["السؤال"],
+            A: row["Option A"] || row["A"],
+            B: row["Option B"] || row["B"],
+            C: row["Option C"] || row["C"],
+            D: row["Option D"] || row["D"],
+            correct: row["Correct Answer"] || row["الإجابة"],
+            difficulty: row["Difficulty"] || "Normal",
+            category: row["Category"] || "General"
+        })).filter(q => q.question && q.A && q.B && q.C && q.D && q.correct);
+
+        if (questionBank.length === 0) {
+            alert("❌ لم يتم العثور على أسئلة صالحة في ملف Excel");
+            return;
+        }
+
+        alert(`✅ تم تحميل ${questionBank.length} سؤال بنجاح`);
+    };
+
+    reader.readAsBinaryString(file);
+}
 /* Upload Images */
 function uploadLogo(f,t){
  if(lockHeader)return alert("مقفول");
