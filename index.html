@@ -1010,17 +1010,15 @@ function renderExamPaper(model, idx) {
         <span>${c.val}</span>
       </div>`
     ).join('');
-    return `<div style="display:block;width:100%;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid #e8ecf4;">
-      <div style="font-size:${fs}px;line-height:1.8;margin-bottom:8px;color:#1a1a2e;display:block;width:100%;">
-        <strong>${i+1}.</strong> ${item.text}
+    return `<div style="display:block;width:100%;margin:0 0 1.4rem 0;padding-bottom:1rem;border-bottom:1px solid #e0e4ef;clear:both;overflow:hidden;">
+      <div style="font-size:${fs}px;line-height:1.9;margin-bottom:8px;color:#1a1a2e;display:block;width:100%;font-weight:500;">
+        <strong style="color:#1e3a8a;">${i+1}.</strong> ${item.text}
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;padding-right:16px;">${optHtml}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;padding-right:16px;margin-top:6px;">${optHtml}</div>
     </div>`;
   }).join('');
 
-  const qBlock = cols===2
-    ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 2rem;align-items:start;">${qItems}</div>`
-    : `<div style="display:block;">${qItems}</div>`;
+  const qBlock = `<div style="display:block;width:100%;">${qItems}</div>`;
 
   return `<div class="exam-paper" id="paper-${idx}">
     ${header}
