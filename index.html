@@ -2,88 +2,14 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>Exam Builder PRO</title>
+<title>Exam Builder Pro+</title>
+<link rel="stylesheet" href="style.css">
 
-<style>
-body {
-    margin:0;
-    font-family:"Segoe UI";
-    background:#0f172a;
-}
-
-.app {
-    display:flex;
-    height:100vh;
-}
-
-/* Sidebar */
-.sidebar {
-    width:260px;
-    background:#020617;
-    color:white;
-    padding:20px;
-}
-
-.sidebar h2 {
-    margin-bottom:20px;
-}
-
-.sidebar button {
-    width:100%;
-    padding:10px;
-    margin:5px 0;
-    border:none;
-    border-radius:8px;
-    background:#3b82f6;
-    color:white;
-    cursor:pointer;
-}
-
-/* Canvas */
-.canvas {
-    flex:1;
-    background:#e2e8f0;
-    padding:40px;
-    overflow:auto;
-}
-
-/* Page */
-.page {
-    width:794px;
-    min-height:1123px;
-    margin:auto;
-    background:white;
-    padding:40px;
-    box-shadow:0 0 20px rgba(0,0,0,0.2);
-}
-
-/* Block */
-.block {
-    padding:10px;
-    margin:10px 0;
-    border:2px dashed transparent;
-}
-
-.block.active {
-    border:2px dashed red;
-}
-
-/* Toolbar */
-.toolbar {
-    position:fixed;
-    bottom:10px;
-    left:50%;
-    transform:translateX(-50%);
-    background:#1e293b;
-    padding:10px;
-    border-radius:10px;
-}
-
-.toolbar input, .toolbar select {
-    margin:5px;
-}
-</style>
-
+<script src="libs/html2pdf.bundle.min.js"></script>
+<script src="libs/xlsx.full.min.js"></script>
+<script src="libs/docx.bundle.js"></script>
+<script src="libs/FileSaver.min.js"></script>
+<script src="libs/Sortable.min.js"></script>
 </head>
 
 <body>
@@ -91,106 +17,44 @@ body {
 <div class="app">
 
 <div class="sidebar">
-<h2>🎓 Exam Builder</h2>
+<h2>📘 Exam Builder</h2>
 
-<button onclick="addBlock('title')">➕ عنوان</button>
-<button onclick="addBlock('text')">➕ نص</button>
-<button onclick="addBlock('question')">➕ سؤال</button>
-<button onclick="addBlock('line')">➕ فاصل</button>
+<button onclick="openSettings()">⚙️ إعدادات الامتحان</button>
+
+<label>عدد النماذج</label>
+<input id="modelsCount" type="number" value="3">
+
+<label>عدد الأسئلة</label>
+<input id="questionsCount" type="number" value="10">
 
 <hr>
 
-<button onclick="exportPDF()">📄 تصدير PDF</button>
+<label>شعار الوزارة</label>
+<input type="file" accept="image/*" onchange="uploadLogo(this.files[0],'ministry')">
+
+<label>شعار المدرسة</label>
+<input type="file" accept="image/*" onchange="uploadLogo(this.files[0],'school')">
+
+<label>ترويسة كاملة</label>
+<input type="file" accept="image/*" onchange="uploadHeader(this.files[0])">
+
+<hr>
+<label>تحميل بنك الأسئلة (Excel)</label>
+<input type="file" accept=".xlsx" onchange="loadExcel(this.files[0])">
+
+<hr>
+<button onclick="generateExams()">🚀 توليد الامتحانات</button>
+<button onclick="openGrading()">✅ التصحيح</button>
+</div>
+
+<div class="preview" id="preview"></div>
 
 </div>
 
-<div class="canvas">
-<div class="page" id="page"></div>
-</div>
+<!-- ===== Modals ===== -->
+<div id="settingsModal" class="modal"></div>
+<div id="gradingModal" class="modal"></div>
 
-</div>
-
-<div class="toolbar">
-حجم الخط:
-<input type="range" id="size" min="12" max="40">
-
-لون:
-<input type="color" id="color">
-
-محاذاة:
-<select id="align">
-<option value="right">يمين</option>
-<option value="center">وسط</option>
-<option value="left">يسار</option>
-</select>
-
-<button onclick="applyStyle()">تطبيق</button>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-<script>
-
-let selected = null;
-
-/* إضافة عناصر */
-function addBlock(type){
-
-    let el = document.createElement("div");
-    el.className = "block";
-    el.contentEditable = true;
-
-    if(type==="title"){
-        el.innerHTML = "عنوان الامتحان";
-        el.style.fontSize = "26px";
-        el.style.fontWeight = "bold";
-    }
-
-    if(type==="text"){
-        el.innerHTML = "نص هنا...";
-    }
-
-    if(type==="line"){
-        el.innerHTML = "<hr>";
-    }
-
-    if(type==="question"){
-        el.innerHTML = `
-        <b>1) اكتب السؤال هنا</b><br>
-        أ) خيار<br>
-        ب) خيار<br>
-        ج) خيار<br>
-        د) خيار
-        `;
-    }
-
-    el.onclick = () => select(el);
-
-    document.getElementById("page").appendChild(el);
-}
-
-/* تحديد العنصر */
-function select(el){
-    document.querySelectorAll(".block").forEach(b=>b.classList.remove("active"));
-    el.classList.add("active");
-    selected = el;
-}
-
-/* تطبيق ستايل */
-function applyStyle(){
-    if(!selected) return;
-
-    selected.style.fontSize = document.getElementById("size").value + "px";
-    selected.style.color = document.getElementById("color").value;
-    selected.style.textAlign = document.getElementById("align").value;
-}
-
-/* PDF */
-function exportPDF(){
-    html2pdf().from(document.getElementById("page")).save("exam.pdf");
-}
-
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
