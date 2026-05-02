@@ -1,484 +1,22 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>مولّد نماذج الامتحانات</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&family=Amiri:wght@400;700&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مولّد نماذج الامتحانات</title>
 
-  :root {
-    --bg: #0f1117;
-    --bg2: #161b27;
-    --bg3: #1e2535;
-    --card: #1a2030;
-    --border: #2a3347;
-    --border2: #3a4a67;
-    --accent: #4f7cff;
-    --accent2: #7c5cfc;
-    --accent3: #00d4aa;
-    --text: #e8edf8;
-    --text2: #8a9bc0;
-    --text3: #5a6a8a;
-    --danger: #ff4f6a;
-    --warn: #ffb84f;
-    --success: #00d4aa;
-    --radius: 12px;
-    --radius-sm: 8px;
-  }
+  <!-- External libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'Cairo', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    direction: rtl;
-  }
-
-  /* ── HEADER ── */
-  .header {
-    background: linear-gradient(135deg, #0f1117 0%, #1a1f35 100%);
-    border-bottom: 1px solid var(--border);
-    padding: 0 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 64px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 20px;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .logo-icon {
-    width: 36px; height: 36px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
-  }
-  .steps-nav {
-    display: flex; gap: 4px;
-  }
-  .step-btn {
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-family: 'Cairo', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text2);
-    cursor: pointer;
-    transition: all .2s;
-  }
-  .step-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
-  .step-btn.done {
-    border-color: var(--accent3);
-    color: var(--accent3);
-  }
-
-  /* ── LAYOUT ── */
-  .main { display: flex; min-height: calc(100vh - 64px); }
-  .sidebar {
-    width: 280px;
-    flex-shrink: 0;
-    background: var(--bg2);
-    border-left: 1px solid var(--border);
-    padding: 1.5rem 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  .content { flex: 1; padding: 2rem; overflow-y: auto; }
-
-  /* ── PANELS ── */
-  .panel { display: none; }
-  .panel.active { display: block; }
-
-  /* ── CARDS ── */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    margin-bottom: 1.25rem;
-  }
-  .card-title {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text);
-  }
-  .card-title .icon {
-    width: 28px; height: 28px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, var(--accent)22, var(--accent2)22);
-    border: 1px solid var(--accent)44;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-  }
-
-  /* ── UPLOAD ZONE ── */
-  .upload-zone {
-    border: 2px dashed var(--border2);
-    border-radius: var(--radius);
-    padding: 3rem 2rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all .3s;
-    background: var(--bg3);
-    position: relative;
-  }
-  .upload-zone:hover, .upload-zone.drag {
-    border-color: var(--accent);
-    background: #4f7cff0d;
-  }
-  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
-  .upload-icon { font-size: 48px; margin-bottom: 1rem; opacity: .6; }
-  .upload-zone h3 { font-size: 16px; font-weight: 600; margin-bottom: .5rem; }
-  .upload-zone p { font-size: 13px; color: var(--text2); }
-
-  /* ── INPUTS ── */
-  label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 6px; }
-  input[type=text], input[type=number], select, textarea {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 14px;
-    font-family: 'Cairo', sans-serif;
-    font-size: 14px;
-    color: var(--text);
-    outline: none;
-    transition: border-color .2s;
-    direction: rtl;
-  }
-  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-  .form-row { margin-bottom: 1rem; }
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-
-  /* ── BUTTONS ── */
-  .btn {
-    padding: 10px 22px;
-    border-radius: var(--radius-sm);
-    font-family: 'Cairo', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all .2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #fff;
-  }
-  .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
-  .btn-secondary {
-    background: var(--bg3);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-  .btn-secondary:hover { border-color: var(--border2); }
-  .btn-success {
-    background: linear-gradient(135deg, var(--accent3), #00a888);
-    color: #001a14;
-  }
-  .btn-danger {
-    background: var(--danger)22;
-    color: var(--danger);
-    border: 1px solid var(--danger)44;
-  }
-  .btn-full { width: 100%; justify-content: center; }
-  .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: var(--radius); }
-
-  /* ── TABLE ── */
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { background: var(--bg3); padding: 10px 12px; text-align: right; color: var(--text2); font-weight: 500; border-bottom: 1px solid var(--border); }
-  td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
-  tr:hover td { background: var(--bg3); }
-  .badge {
-    display: inline-flex; align-items: center;
-    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
-  }
-  .badge-blue { background: var(--accent)22; color: var(--accent); }
-  .badge-green { background: var(--accent3)22; color: var(--accent3); }
-  .badge-warn { background: var(--warn)22; color: var(--warn); }
-
-  /* ── STATS BAR ── */
-  .stats-bar {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-  .stat-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem 1.25rem;
-    text-align: center;
-  }
-  .stat-num { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .stat-label { font-size: 12px; color: var(--text3); margin-top: 2px; }
-
-  /* ── SIDEBAR SETTINGS ── */
-  .sidebar-section { margin-bottom: 1.5rem; }
-  .sidebar-title { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .75rem; }
-  .toggle-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-    color: var(--text2);
-  }
-  .toggle {
-    width: 38px; height: 20px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    position: relative;
-    cursor: pointer;
-    transition: background .2s;
-    flex-shrink: 0;
-  }
-  .toggle.on { background: var(--accent); border-color: var(--accent); }
-  .toggle::after {
-    content: '';
-    position: absolute;
-    width: 14px; height: 14px;
-    background: #fff;
-    border-radius: 50%;
-    top: 2px; right: 2px;
-    transition: transform .2s;
-  }
-  .toggle.on::after { transform: translateX(-18px); }
-
-  /* ── EXAM PREVIEW ── */
-  .exam-tabs {
-    display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap;
-  }
-  .exam-tab {
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-family: 'Cairo', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text2);
-    cursor: pointer;
-    transition: all .2s;
-  }
-  .exam-tab.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
-
-  /* ── EXAM PAPER ── */
-  .exam-paper {
-    background: #fff;
-    color: #1a1a2e;
-    border-radius: var(--radius);
-    padding: 2.5rem;
-    max-width: 800px;
-    margin: 0 auto;
-    box-shadow: 0 20px 60px #00000060;
-    font-family: 'Cairo', sans-serif;
-    direction: rtl;
-  }
-  .exam-paper.dark-preview {
-    background: #fff;
-  }
-  .exam-header-paper {
-    text-align: center;
-    border-bottom: 3px double #1a1a2e;
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
-  }
-  .exam-institution { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-  .exam-title-paper { font-size: 22px; font-weight: 900; margin: 8px 0; }
-  .exam-meta {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    font-size: 13px;
-    margin-bottom: 1.5rem;
-    padding: 12px;
-    background: #f8f9ff;
-    border-radius: 8px;
-    border: 1px solid #e0e4f0;
-  }
-  .exam-meta-item { display: flex; gap: 8px; }
-  .meta-key { font-weight: 600; color: #4a5568; }
-  .student-info {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 1.5rem;
-  }
-  .student-field {
-    border-bottom: 1px solid #2d3748;
-    padding-bottom: 4px;
-    font-size: 13px;
-    color: #4a5568;
-    font-weight: 500;
-  }
-  .q-item { margin-bottom: 1.25rem; }
-  .q-num { font-weight: 700; font-size: 14px; color: #2d3748; }
-  .q-text { font-size: 14px; line-height: 1.8; margin-bottom: 8px; color: #1a1a2e; }
-  .q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding-right: 12px; }
-  .q-opt { font-size: 13px; color: #4a5568; display: flex; gap: 6px; align-items: flex-start; }
-  .opt-label { font-weight: 600; color: #2d3748; flex-shrink: 0; }
-  .model-label {
-    display: inline-block;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #fff;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 4px 14px;
-    border-radius: 20px;
-    margin-bottom: 1rem;
-  }
-
-  /* ── ANSWER KEY ── */
-  .answer-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-  }
-  .ans-item {
-    background: #f0f4ff;
-    border-radius: 8px;
-    padding: 10px;
-    text-align: center;
-    border: 1px solid #d0d8f0;
-  }
-  .ans-qnum { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
-  .ans-val { font-size: 18px; font-weight: 700; color: #1e3a8a; }
-
-  /* ── EXPORT BAR ── */
-  .export-bar {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-  .export-bar h3 { font-size: 15px; font-weight: 600; }
-  .export-btns { display: flex; gap: 10px; flex-wrap: wrap; }
-
-  /* ── PROGRESS ── */
-  .progress-bar {
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    overflow: hidden;
-    margin: 8px 0;
-  }
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 3px;
-    transition: width .5s ease;
-  }
-
-  /* ── TOAST ── */
-  .toast {
-    position: fixed;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: var(--card);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    padding: 12px 24px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text);
-    z-index: 9999;
-    transition: transform .3s;
-    box-shadow: 0 8px 32px #00000080;
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.success { border-color: var(--accent3); color: var(--accent3); }
-  .toast.error { border-color: var(--danger); color: var(--danger); }
-
-  /* ── EMPTY STATE ── */
-  .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    color: var(--text3);
-  }
-  .empty-state .icon { font-size: 64px; margin-bottom: 1rem; opacity: .4; }
-  .empty-state p { font-size: 15px; }
-
-  /* ── COLOR PICKER ── */
-  .color-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
-  .color-swatch {
-    width: 28px; height: 28px;
-    border-radius: 6px;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: all .2s;
-  }
-  .color-swatch.selected { border-color: #fff; transform: scale(1.15); }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 768px) {
-    .sidebar { display: none; }
-    .stats-bar { grid-template-columns: 1fr 1fr; }
-    .form-grid { grid-template-columns: 1fr; }
-    .q-options { grid-template-columns: 1fr; }
-  }
-
-  /* ── LOADING ── */
-  .spinner {
-    width: 20px; height: 20px;
-    border: 2px solid transparent;
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin .6s linear infinite;
-    display: none;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .generating .spinner { display: block; }
-  .generating span { display: none; }
-</style>
+  <!-- App styles -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- ══════════════════════════════════════
+     HEADER / NAVIGATION
+══════════════════════════════════════ -->
 <div class="header">
   <div class="logo">
     <div class="logo-icon">📝</div>
@@ -486,16 +24,20 @@
   </div>
   <div class="steps-nav">
     <button class="step-btn active" onclick="goPanel(0)" id="nav0">① الأسئلة</button>
-    <button class="step-btn" onclick="goPanel(1)" id="nav1">② الإعدادات</button>
-    <button class="step-btn" onclick="goPanel(2)" id="nav2">③ التصميم</button>
-    <button class="step-btn" onclick="goPanel(3)" id="nav3">④ النماذج</button>
+    <button class="step-btn"        onclick="goPanel(1)" id="nav1">② الإعدادات</button>
+    <button class="step-btn"        onclick="goPanel(2)" id="nav2">③ التصميم</button>
+    <button class="step-btn"        onclick="goPanel(3)" id="nav3">④ النماذج</button>
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     MAIN LAYOUT
+══════════════════════════════════════ -->
 <div class="main">
 
-  <!-- SIDEBAR -->
+  <!-- ── SIDEBAR ── -->
   <div class="sidebar">
+
     <div class="sidebar-section">
       <div class="sidebar-title">خيارات الخلط</div>
       <div class="toggle-row">
@@ -530,65 +72,92 @@
         ورقة إجابات
         <div class="toggle on" id="tgl-answerkey" onclick="toggleOpt(this)"></div>
       </div>
+      <div class="toggle-row">
+        جدول تعبئة الإجابات
+        <div class="toggle on" id="tgl-answertable" onclick="toggleOpt(this)"></div>
+      </div>
     </div>
 
     <div class="sidebar-section">
       <div class="sidebar-title">معلومات البنك</div>
-      <div style="font-size:13px; color:var(--text2);">
-        إجمالي الأسئلة: <span id="sb-total" style="color:var(--accent);font-weight:700;">0</span><br>
-        المحاور: <span id="sb-topics" style="color:var(--accent2);font-weight:700;">0</span><br>
-        متوسط الخيارات: <span id="sb-avg" style="color:var(--accent3);font-weight:700;">-</span>
+      <div style="font-size:13px; color:var(--text2); line-height:2;">
+        إجمالي الأسئلة: <span id="sb-total"  style="color:var(--accent); font-weight:700;">0</span><br>
+        المحاور:        <span id="sb-topics" style="color:var(--accent2);font-weight:700;">0</span><br>
+        خيارات/سؤال:   <span id="sb-avg"    style="color:var(--accent3);font-weight:700;">-</span>
       </div>
     </div>
-  </div>
 
-  <!-- CONTENT -->
+  </div>
+  <!-- /sidebar -->
+
+  <!-- ── CONTENT ── -->
   <div class="content">
 
-    <!-- PANEL 0: IMPORT -->
+    <!-- ════════════════════════════════
+         PANEL 0 — IMPORT QUESTIONS
+    ════════════════════════════════ -->
     <div class="panel active" id="panel-0">
+
+      <!-- Stats row -->
       <div class="stats-bar">
         <div class="stat-card">
-          <div class="stat-num" id="stat-total">0</div>
+          <div class="stat-num"   id="stat-total">0</div>
           <div class="stat-label">إجمالي الأسئلة</div>
         </div>
         <div class="stat-card">
-          <div class="stat-num" id="stat-topics">0</div>
+          <div class="stat-num"   id="stat-topics">0</div>
           <div class="stat-label">المحاور / المواضيع</div>
         </div>
         <div class="stat-card">
-          <div class="stat-num" id="stat-cols">0</div>
+          <div class="stat-num"   id="stat-cols">0</div>
           <div class="stat-label">الأعمدة المكتشفة</div>
         </div>
         <div class="stat-card">
-          <div class="stat-num" id="stat-ready">-</div>
+          <div class="stat-num"   id="stat-ready">-</div>
           <div class="stat-label">حالة الاستيراد</div>
         </div>
       </div>
 
+      <!-- Upload -->
       <div class="card">
         <div class="card-title"><div class="icon">📂</div> استيراد بنك الأسئلة</div>
+
         <div class="upload-zone" id="dropZone">
           <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(event)" id="fileInput">
           <div class="upload-icon">📊</div>
           <h3>اسحب ملف Excel هنا أو انقر للاختيار</h3>
-          <p>يدعم: xlsx, xls, csv — يكتشف الأعمدة تلقائياً</p>
+          <p>يدعم xlsx, xls, csv — يكتشف الأعمدة تلقائياً</p>
         </div>
 
-        <div style="margin-top:1rem; padding:1rem; background:var(--bg3); border-radius:var(--radius-sm); border:1px solid var(--border);">
-          <div style="font-size:13px; font-weight:600; margin-bottom:.5rem; color:var(--text2);">📋 تنسيق الملف المتوقع</div>
-          <div style="font-size:12px; color:var(--text3); line-height:2;">
-            الأعمدة المطلوبة: <span class="badge badge-blue">السؤال</span> <span class="badge badge-blue">أ</span> <span class="badge badge-blue">ب</span> <span class="badge badge-blue">ج</span> <span class="badge badge-blue">د</span> <span class="badge badge-green">الإجابة الصحيحة</span><br>
-            أعمدة اختيارية: <span class="badge badge-warn">المحور</span> <span class="badge badge-warn">الصعوبة</span> <span class="badge badge-warn">الدرجة</span>
+        <!-- Format hint -->
+        <div style="margin-top:1rem; padding:1rem; background:var(--bg3);
+                    border-radius:var(--radius-sm); border:1px solid var(--border);">
+          <div style="font-size:13px; font-weight:600; margin-bottom:.5rem; color:var(--text2);">
+            📋 تنسيق الملف المدعوم
           </div>
-        </div>
-
-        <div id="mapping-area" style="display:none; margin-top:1rem;">
-          <div class="card-title"><div class="icon">🔗</div> ربط الأعمدة</div>
-          <div class="form-grid" id="col-map"></div>
+          <div style="font-size:12px; color:var(--text3); line-height:2.2;">
+            <strong style="color:var(--accent);">إنجليزي:</strong>
+            <span class="badge badge-blue">Question</span>
+            <span class="badge badge-blue">A</span>
+            <span class="badge badge-blue">B</span>
+            <span class="badge badge-blue">C</span>
+            <span class="badge badge-blue">D</span>
+            <span class="badge badge-green">Answer</span><br>
+            <strong style="color:var(--accent);">عربي:</strong>
+            <span class="badge badge-blue">السؤال</span>
+            <span class="badge badge-blue">أ</span>
+            <span class="badge badge-blue">ب</span>
+            <span class="badge badge-blue">ج</span>
+            <span class="badge badge-blue">د</span>
+            <span class="badge badge-green">الإجابة الصحيحة</span><br>
+            أعمدة اختيارية:
+            <span class="badge badge-warn">Topic</span>
+            <span class="badge badge-warn">Difficulty</span>
+          </div>
         </div>
       </div>
 
+      <!-- Preview table (shown after import) -->
       <div id="preview-table" style="display:none;">
         <div class="card">
           <div class="card-title"><div class="icon">👁</div> معاينة الأسئلة المستوردة</div>
@@ -600,31 +169,37 @@
           </div>
           <div style="margin-top:1rem; display:flex; gap:10px;">
             <button class="btn btn-primary" onclick="goPanel(1)">التالي: إعدادات النماذج ←</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">استبدال الملف</button>
+            <button class="btn btn-secondary"
+                    onclick="document.getElementById('fileInput').click()">استبدال الملف</button>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- PANEL 1: SETTINGS -->
+    </div>
+    <!-- /panel-0 -->
+
+    <!-- ════════════════════════════════
+         PANEL 1 — EXAM SETTINGS
+    ════════════════════════════════ -->
     <div class="panel" id="panel-1">
       <div class="card">
         <div class="card-title"><div class="icon">⚙️</div> إعدادات الامتحان</div>
+
         <div class="form-grid">
           <div class="form-row">
             <label>اسم المادة</label>
             <input type="text" id="subjectName" placeholder="مثال: الرياضيات" value="الرياضيات">
           </div>
           <div class="form-row">
-            <label>رأس الامتحان (المؤسسة)</label>
-            <input type="text" id="institution" placeholder="مثال: وزارة التربية والتعليم" value="وزارة التربية والتعليم">
+            <label>اسم المؤسسة / رأس الورقة</label>
+            <input type="text" id="institution" value="وزارة التربية والتعليم">
           </div>
           <div class="form-row">
             <label>عدد الأسئلة في كل نموذج</label>
             <input type="number" id="qPerModel" min="1" max="200" value="20">
           </div>
           <div class="form-row">
-            <label>عدد النماذج المطلوب توليدها</label>
+            <label>عدد النماذج المطلوبة</label>
             <input type="number" id="numModels" min="1" max="26" value="4">
           </div>
           <div class="form-row">
@@ -641,18 +216,23 @@
           </div>
           <div class="form-row">
             <label>تاريخ الامتحان</label>
-            <input type="text" id="examDate" placeholder="مثال: 2025/6/15">
+            <input type="text" id="examDate" placeholder="2025/6/15">
           </div>
         </div>
+
         <div class="form-row">
           <label>تعليمات الامتحان</label>
-          <textarea id="instructions" rows="3" placeholder="أجب عن جميع الأسئلة. لكل سؤال إجابة واحدة صحيحة.">أجب عن جميع الأسئلة. لكل سؤال إجابة واحدة صحيحة فقط. يُحسب من الدرجة الكاملة.</textarea>
+          <textarea id="instructions" rows="3">أجب عن جميع الأسئلة. لكل سؤال إجابة واحدة صحيحة فقط.</textarea>
         </div>
+
         <button class="btn btn-primary" onclick="goPanel(2)">التالي: تصميم الورقة ←</button>
       </div>
     </div>
+    <!-- /panel-1 -->
 
-    <!-- PANEL 2: DESIGN -->
+    <!-- ════════════════════════════════
+         PANEL 2 — DESIGN
+    ════════════════════════════════ -->
     <div class="panel" id="panel-2">
       <div class="card">
         <div class="card-title"><div class="icon">🎨</div> تصميم ورقة الامتحان</div>
@@ -661,43 +241,55 @@
           <div class="form-row">
             <label>ترتيب الأسئلة في الصفحة</label>
             <select id="layoutCols">
-              <option value="1">عمود واحد (سؤال في كل سطر)</option>
-              <option value="2" selected>عمودان (سؤالان في كل صف)</option>
+              <option value="1">عمود واحد</option>
+              <option value="2" selected>عمودان</option>
             </select>
           </div>
           <div class="form-row">
             <label>حجم الخط</label>
             <select id="fontSize">
-              <option value="12">صغير (12px)</option>
-              <option value="14" selected>متوسط (14px)</option>
-              <option value="16">كبير (16px)</option>
+              <option value="12">صغير — 12px</option>
+              <option value="14" selected>متوسط — 14px</option>
+              <option value="16">كبير — 16px</option>
             </select>
           </div>
+
+          <!-- Header background color -->
           <div class="form-row">
-            <label>لون الرأس الرئيسي</label>
+            <label>لون خلفية الرأس</label>
             <div class="color-row">
               <div class="color-swatch selected" style="background:#1e3a8a" data-color="#1e3a8a" onclick="pickColor(this,'headerBg')"></div>
-              <div class="color-swatch" style="background:#7c2d12" data-color="#7c2d12" onclick="pickColor(this,'headerBg')"></div>
-              <div class="color-swatch" style="background:#14532d" data-color="#14532d" onclick="pickColor(this,'headerBg')"></div>
-              <div class="color-swatch" style="background:#312e81" data-color="#312e81" onclick="pickColor(this,'headerBg')"></div>
-              <div class="color-swatch" style="background:#1a1a2e" data-color="#1a1a2e" onclick="pickColor(this,'headerBg')"></div>
-              <div class="color-swatch" style="background:#374151" data-color="#374151" onclick="pickColor(this,'headerBg')"></div>
-              <input type="color" id="headerBg" value="#1e3a8a" style="width:28px;height:28px;border-radius:6px;border:none;cursor:pointer;padding:2px;">
+              <div class="color-swatch"          style="background:#7c2d12" data-color="#7c2d12" onclick="pickColor(this,'headerBg')"></div>
+              <div class="color-swatch"          style="background:#14532d" data-color="#14532d" onclick="pickColor(this,'headerBg')"></div>
+              <div class="color-swatch"          style="background:#312e81" data-color="#312e81" onclick="pickColor(this,'headerBg')"></div>
+              <div class="color-swatch"          style="background:#1a1a2e" data-color="#1a1a2e" onclick="pickColor(this,'headerBg')"></div>
+              <div class="color-swatch"          style="background:#374151" data-color="#374151" onclick="pickColor(this,'headerBg')"></div>
+              <input type="color" id="headerBg" value="#1e3a8a"
+                     style="width:28px;height:28px;border-radius:6px;border:none;cursor:pointer;padding:2px;">
             </div>
           </div>
+
+          <!-- Header text color -->
           <div class="form-row">
             <label>لون نص الرأس</label>
             <div class="color-row">
-              <div class="color-swatch selected" style="background:#ffffff;border:1px solid #ccc" data-color="#ffffff" onclick="pickColor(this,'headerText')"></div>
-              <div class="color-swatch" style="background:#fbbf24" data-color="#fbbf24" onclick="pickColor(this,'headerText')"></div>
-              <div class="color-swatch" style="background:#f0f4ff;border:1px solid #ccc" data-color="#f0f4ff" onclick="pickColor(this,'headerText')"></div>
-              <input type="color" id="headerText" value="#ffffff" style="width:28px;height:28px;border-radius:6px;border:none;cursor:pointer;padding:2px;">
+              <div class="color-swatch selected" style="background:#ffffff;border:1px solid #ccc"
+                   data-color="#ffffff" onclick="pickColor(this,'headerText')"></div>
+              <div class="color-swatch" style="background:#fbbf24"
+                   data-color="#fbbf24" onclick="pickColor(this,'headerText')"></div>
+              <div class="color-swatch" style="background:#f0f4ff;border:1px solid #ccc"
+                   data-color="#f0f4ff" onclick="pickColor(this,'headerText')"></div>
+              <input type="color" id="headerText" value="#ffffff"
+                     style="width:28px;height:28px;border-radius:6px;border:none;cursor:pointer;padding:2px;">
             </div>
           </div>
         </div>
 
-        <div style="margin-top:1.5rem; margin-bottom:1rem; font-size:14px; font-weight:600; color:var(--text2);">معاينة سريعة لرأس الورقة:</div>
-        <div id="design-preview" style="border-radius:10px; overflow:hidden; border:1px solid var(--border);">
+        <!-- Live preview -->
+        <div style="margin-top:1.5rem; margin-bottom:.75rem; font-size:14px; font-weight:600; color:var(--text2);">
+          معاينة رأس الورقة:
+        </div>
+        <div style="border-radius:10px; overflow:hidden; border:1px solid var(--border);">
           <div id="preview-header" style="background:#1e3a8a; color:#fff; padding:1.5rem; text-align:center;">
             <div style="font-size:16px; font-weight:700; margin-bottom:4px;" id="prev-institution">وزارة التربية والتعليم</div>
             <div style="font-size:22px; font-weight:900;" id="prev-subject">امتحان مادة: الرياضيات</div>
@@ -714,639 +306,54 @@
         </div>
       </div>
     </div>
+    <!-- /panel-2 -->
 
-    <!-- PANEL 3: MODELS -->
+    <!-- ════════════════════════════════
+         PANEL 3 — MODELS & EXPORT
+    ════════════════════════════════ -->
     <div class="panel" id="panel-3">
+
+      <!-- Export bar -->
       <div class="export-bar">
         <div>
           <h3>✅ تم التوليد بنجاح</h3>
           <div style="font-size:13px; color:var(--text2);" id="gen-summary"></div>
         </div>
         <div class="export-btns">
-          <button class="btn btn-primary" onclick="exportAllPDF()">📄 تصدير PDF (كل النماذج)</button>
-          <button class="btn btn-secondary" onclick="exportAllWord()">📝 تصدير Word</button>
-          <button class="btn btn-success" onclick="exportAnswerKeys()">✔️ أوراق الإجابات</button>
+          <button class="btn btn-primary"   onclick="exportAllPDF()">📄 PDF — ملف مضغوط</button>
+          <button class="btn btn-secondary" onclick="exportAllWord()">📝 Word — ملف مضغوط</button>
+          <button class="btn btn-success"   onclick="exportAnswerKeys()">✔️ أوراق الإجابات</button>
         </div>
       </div>
 
+      <!-- Model tabs -->
       <div class="exam-tabs" id="model-tabs"></div>
 
+      <!-- Preview area -->
       <div id="model-view"></div>
 
+      <!-- Answer keys view -->
       <div id="answer-key-view" style="display:none;">
         <div class="card">
           <div class="card-title"><div class="icon">✔️</div> أوراق الإجابات الصحيحة</div>
           <div id="answer-keys-content"></div>
         </div>
       </div>
+
     </div>
+    <!-- /panel-3 -->
 
   </div>
-</div>
+  <!-- /content -->
 
-<!-- TOAST -->
+</div>
+<!-- /main -->
+
+<!-- Toast notification -->
 <div class="toast" id="toast"></div>
 
-<script>
-// ─── STATE ───
-let questions = [];
-let models = [];
-let colMap = { q:'', a:'', b:'', c:'', d:'', ans:'', topic:'', diff:'' };
-let opts = { shuffleQ: true, shuffleA: true, unique: true, header: true, student: true, modelNum: true, answerKey: true };
-let design = { headerBg: '#1e3a8a', headerText: '#ffffff', fontSize: 14, layoutCols: 2 };
-let examCfg = {};
-let currentModelIdx = 0;
+<!-- App logic -->
+<script src="app.js"></script>
 
-// ─── NAVIGATION ───
-function goPanel(n) {
-  if (n > 0 && questions.length === 0) { showToast('يرجى استيراد الأسئلة أولاً', 'error'); return; }
-  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===n));
-  document.querySelectorAll('.step-btn').forEach((b,i) => { b.classList.toggle('active', i===n); });
-  updatePreview();
-}
-
-// ─── TOGGLE ───
-function toggleOpt(el) {
-  el.classList.toggle('on');
-  const key = el.id.replace('tgl-','').replace(/-([a-z])/g, (_,c) => c.toUpperCase());
-  const map = {'shuffleQ':'shuffleQ','shuffleA':'shuffleA','unique':'unique','header':'header','student':'student','modelnum':'modelNum','answerkey':'answerKey'};
-  const k = el.id.replace('tgl-','');
-  if(k==='shuffle-q') opts.shuffleQ = el.classList.contains('on');
-  else if(k==='shuffle-a') opts.shuffleA = el.classList.contains('on');
-  else if(k==='unique') opts.unique = el.classList.contains('on');
-  else if(k==='header') opts.header = el.classList.contains('on');
-  else if(k==='student') opts.student = el.classList.contains('on');
-  else if(k==='modelnum') opts.modelNum = el.classList.contains('on');
-  else if(k==='answerkey') opts.answerKey = el.classList.contains('on');
-}
-
-// ─── FILE IMPORT ───
-const dropZone = document.getElementById('dropZone');
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
-dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag'); handleFile({target:{files:e.dataTransfer.files}}); });
-
-function handleFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const wb = XLSX.read(e.target.result, {type:'array'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const raw = XLSX.utils.sheet_to_json(ws, {header:1});
-      processData(raw);
-    } catch(err) {
-      showToast('خطأ في قراءة الملف: ' + err.message, 'error');
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function processData(raw) {
-  if (raw.length < 2) { showToast('الملف فارغ', 'error'); return; }
-  const headers = raw[0].map(h => String(h||'').trim());
-  autoMap(headers);
-  questions = raw.slice(1).filter(r => r.some(c => c !== undefined && c !== ''))
-    .map(r => {
-      const obj = {};
-      headers.forEach((h,i) => obj[h] = r[i] !== undefined ? String(r[i]).trim() : '');
-      return obj;
-    });
-  updateStats(headers);
-  renderPreviewTable(headers);
-  showToast('✅ تم استيراد ' + questions.length + ' سؤال', 'success');
-}
-
-function autoMap(headers) {
-  const lh = headers.map(h => String(h||'').trim().toLowerCase());
-  const findExact = (targets) => {
-    for (const t of targets) {
-      const i = lh.findIndex(h => h === t.toLowerCase());
-      if (i !== -1) return headers[i];
-    }
-    return '';
-  };
-  const findContains = (targets) => {
-    for (const t of targets) {
-      const i = lh.findIndex(h => h.includes(t.toLowerCase()));
-      if (i !== -1) return headers[i];
-    }
-    return '';
-  };
-
-  // Exact match first (handles Question,A,B,C,D,Answer perfectly)
-  colMap.q   = findExact(['Question','question','سؤال','نص السؤال']) || findContains(['question','سؤال','نص']);
-  colMap.a   = findExact(['A','a','أ','ا','Choice A','Option A']) || findContains(['choice a','option a','خيار أ']);
-  colMap.b   = findExact(['B','b','ب','Choice B','Option B']) || findContains(['choice b','option b','خيار ب']);
-  colMap.c   = findExact(['C','c','ج','Choice C','Option C']) || findContains(['choice c','option c','خيار ج']);
-  colMap.d   = findExact(['D','d','د','Choice D','Option D']) || findContains(['choice d','option d','خيار د']);
-  colMap.ans = findExact(['Answer','answer','Correct','correct','الإجابة','إجابة','الإجابة الصحيحة']) || findContains(['answer','correct','إجابة','صحيح']);
-  colMap.topic = findExact(['Topic','topic','Unit','unit','محور','وحدة','فصل']) || findContains(['topic','unit','محور','وحدة']);
-  colMap.diff  = findExact(['Difficulty','difficulty','Level','level','صعوبة']) || findContains(['difficulty','level','صعوبة']);
-
-  // Positional fallback if nothing found
-  if (!colMap.q   && headers[0]) colMap.q   = headers[0];
-  if (!colMap.a   && headers[1]) colMap.a   = headers[1];
-  if (!colMap.b   && headers[2]) colMap.b   = headers[2];
-  if (!colMap.c   && headers[3]) colMap.c   = headers[3];
-  if (!colMap.d   && headers[4]) colMap.d   = headers[4];
-  if (!colMap.ans && headers[5]) colMap.ans = headers[5];
-
-  console.log('Column mapping:', colMap);
-}
-
-function updateStats(headers) {
-  const topics = new Set(questions.map(q => q[colMap.topic]).filter(Boolean));
-  document.getElementById('stat-total').textContent = questions.length;
-  document.getElementById('stat-topics').textContent = topics.size || '—';
-  document.getElementById('stat-cols').textContent = headers.length;
-  document.getElementById('stat-ready').textContent = '✅';
-  document.getElementById('sb-total').textContent = questions.length;
-  document.getElementById('sb-topics').textContent = topics.size || 0;
-  const choiceCols = [colMap.a,colMap.b,colMap.c,colMap.d].filter(Boolean);
-  document.getElementById('sb-avg').textContent = choiceCols.length;
-}
-
-function renderPreviewTable(headers) {
-  const head = document.getElementById('table-head');
-  const body = document.getElementById('table-body');
-  const showCols = headers.slice(0, 6);
-  head.innerHTML = '<th>#</th>' + showCols.map(h=>`<th>${h}</th>`).join('');
-  body.innerHTML = questions.slice(0,8).map((q,i) =>
-    `<tr><td>${i+1}</td>${showCols.map(h=>`<td>${String(q[h]||'').slice(0,60)}</td>`).join('')}</tr>`
-  ).join('') + (questions.length>8 ? `<tr><td colspan="${showCols.length+1}" style="text-align:center;color:var(--text3)">... و ${questions.length-8} سؤال آخر</td></tr>` : '');
-  document.getElementById('preview-table').style.display = 'block';
-}
-
-// ─── COLOR PICKER ───
-function pickColor(swatch, inputId) {
-  const color = swatch.dataset.color;
-  const group = swatch.parentElement;
-  group.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-  swatch.classList.add('selected');
-  document.getElementById(inputId).value = color;
-  if (inputId === 'headerBg') { design.headerBg = color; document.getElementById('preview-header').style.background = color; }
-  if (inputId === 'headerText') { design.headerText = color; document.getElementById('preview-header').style.color = color; }
-}
-
-document.getElementById('headerBg').addEventListener('input', e => { design.headerBg = e.target.value; document.getElementById('preview-header').style.background = e.target.value; });
-document.getElementById('headerText').addEventListener('input', e => { design.headerText = e.target.value; document.getElementById('preview-header').style.color = e.target.value; });
-
-function updatePreview() {
-  const institution = document.getElementById('institution')?.value || '';
-  const subject = document.getElementById('subjectName')?.value || '';
-  const duration = document.getElementById('examDuration')?.value || '';
-  const grade = document.getElementById('totalGrade')?.value || '';
-  document.getElementById('prev-institution').textContent = institution;
-  document.getElementById('prev-subject').textContent = 'امتحان مادة: ' + subject;
-  const ph = document.getElementById('preview-header');
-  if(ph) ph.querySelector('div:last-child').textContent = `الزمن: ${duration} دقيقة | الدرجة: ${grade}`;
-  design.fontSize = parseInt(document.getElementById('fontSize')?.value||14);
-  design.layoutCols = parseInt(document.getElementById('layoutCols')?.value||2);
-}
-
-// ─── SHUFFLE ───
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length-1; i>0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i],a[j]] = [a[j],a[i]];
-  }
-  return a;
-}
-
-// ─── GENERATE ───
-function generateModels() {
-  if (questions.length === 0) { showToast('لا توجد أسئلة للتوليد', 'error'); return; }
-  const n = parseInt(document.getElementById('numModels').value)||4;
-  const qCount = parseInt(document.getElementById('qPerModel').value)||20;
-  if (qCount > questions.length) { showToast(`عدد الأسئلة المطلوب (${qCount}) أكبر من المتاح (${questions.length})`, 'error'); return; }
-  examCfg = {
-    subject: document.getElementById('subjectName').value,
-    institution: document.getElementById('institution').value,
-    duration: document.getElementById('examDuration').value,
-    grade: document.getElementById('totalGrade').value,
-    classLevel: document.getElementById('classLevel').value,
-    date: document.getElementById('examDate').value,
-    instructions: document.getElementById('instructions').value,
-    qCount, n
-  };
-  const btn = document.getElementById('gen-btn');
-  btn.classList.add('generating');
-  setTimeout(() => {
-    models = [];
-    const modelNames = 'أبجدهوزحطيكلمنسعفصقرشتثخذضظغ'.split('');
-    const usedSets = [];
-    for (let m=0; m<n; m++) {
-      let selectedQ;
-      if (opts.unique && usedSets.length < Math.floor(questions.length/qCount)) {
-        const flatUsed = usedSets.flat().map(q=>q[colMap.q]);
-        const pool = questions.filter(q => !flatUsed.includes(q[colMap.q]));
-        selectedQ = pool.length >= qCount ? shuffle(pool).slice(0,qCount) : shuffle(questions).slice(0,qCount);
-      } else {
-        selectedQ = shuffle(questions).slice(0,qCount);
-      }
-      if (opts.shuffleQ) selectedQ = shuffle(selectedQ);
-      const processedQ = selectedQ.map(q => {
-        const choices = [ {label:'أ', val: q[colMap.a]||''}, {label:'ب', val: q[colMap.b]||''}, {label:'ج', val: q[colMap.c]||''}, {label:'د', val: q[colMap.d]||''} ].filter(c=>c.val);
-        const correctVal = q[colMap.ans] || '';
-        let shuffledChoices = opts.shuffleA ? shuffle(choices) : choices;
-        const correctLabel = shuffledChoices.find(c => c.val === correctVal || c.label === correctVal)?.label || correctVal;
-        return { text: q[colMap.q]||'', choices: shuffledChoices, correctLabel, topic: q[colMap.topic]||'', diff: q[colMap.diff]||'' };
-      });
-      usedSets.push(selectedQ);
-      models.push({ name: 'نموذج ' + modelNames[m], letter: modelNames[m], questions: processedQ });
-    }
-    btn.classList.remove('generating');
-    renderModelTabs();
-    goPanel(3);
-    document.getElementById('gen-summary').textContent = `${n} نماذج × ${qCount} سؤال = ${n*qCount} سؤال إجمالي`;
-    showToast(`✅ تم توليد ${n} نماذج بنجاح`, 'success');
-  }, 800);
-}
-
-// ─── RENDER TABS ───
-function renderModelTabs() {
-  const tabs = document.getElementById('model-tabs');
-  tabs.innerHTML = models.map((m,i) =>
-    `<button class="exam-tab ${i===0?'active':''}" onclick="showModel(${i})">${m.name}</button>`
-  ).join('') + `<button class="exam-tab" onclick="showAnswerKeys()">✔️ أوراق الإجابات</button>`;
-  showModel(0);
-}
-
-function showModel(idx) {
-  currentModelIdx = idx;
-  document.querySelectorAll('.exam-tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
-  document.getElementById('answer-key-view').style.display='none';
-  document.getElementById('model-view').style.display='block';
-  document.getElementById('model-view').innerHTML = renderExamPaper(models[idx], idx);
-}
-
-function showAnswerKeys() {
-  document.querySelectorAll('.exam-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.exam-tab').item(models.length).classList.add('active');
-  document.getElementById('model-view').style.display='none';
-  document.getElementById('answer-key-view').style.display='block';
-  renderAllAnswerKeys();
-}
-
-// ─── RENDER EXAM PAPER ───
-function renderExamPaper(model, idx) {
-  const q = model.questions;
-  const fs = design.fontSize;
-  const cols = design.layoutCols;
-
-  let header = '';
-  if (opts.header) {
-    header = `<div style="background:${design.headerBg};color:${design.headerText};padding:1.5rem;text-align:center;margin:-2.5rem -2.5rem 1.5rem;">
-      <div style="font-size:${fs+2}px;font-weight:700;margin-bottom:4px;">${examCfg.institution}</div>
-      <div style="font-size:${fs+8}px;font-weight:900;font-family:'Amiri',serif;">امتحان مادة: ${examCfg.subject}</div>
-      <div style="font-size:${fs-1}px;opacity:.85;margin-top:4px;">الزمن: ${examCfg.duration} دقيقة &nbsp;|&nbsp; الدرجة الكاملة: ${examCfg.grade}</div>
-      ${opts.modelNum ? `<div style="margin-top:6px;display:inline-block;background:rgba(255,255,255,.25);padding:3px 16px;border-radius:20px;font-size:${fs+1}px;font-weight:700;">النموذج: ${model.letter}</div>` : ''}
-    </div>`;
-  }
-
-  let student = '';
-  if (opts.student) {
-    student = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;font-size:${fs-1}px;">
-      <div style="border-bottom:1px solid #2d3748;padding-bottom:4px;color:#4a5568;font-weight:500;">اسم الطالب: ________________</div>
-      <div style="border-bottom:1px solid #2d3748;padding-bottom:4px;color:#4a5568;font-weight:500;">رقم الجلوس: ____________</div>
-      <div style="border-bottom:1px solid #2d3748;padding-bottom:4px;color:#4a5568;font-weight:500;">الشعبة / الفصل: __________</div>
-      <div style="border-bottom:1px solid #2d3748;padding-bottom:4px;color:#4a5568;font-weight:500;">التاريخ: ${examCfg.date || '___________'}</div>
-    </div>`;
-  }
-
-  let instructions = examCfg.instructions ? `<div style="background:#f8f9ff;border:1px solid #d0d8f0;border-radius:8px;padding:10px 14px;margin-bottom:1.5rem;font-size:${fs-1}px;color:#4a5568;line-height:1.8;"><strong>التعليمات:</strong> ${examCfg.instructions}</div>` : '';
-
-  const qItems = q.map((item, i) => {
-    const optHtml = item.choices.map(c =>
-      `<div style="display:flex;gap:6px;align-items:flex-start;font-size:${fs-1}px;color:#4a5568;margin-bottom:4px;">
-        <span style="font-weight:700;color:#2d3748;flex-shrink:0;">${c.label})</span>
-        <span>${c.val}</span>
-      </div>`
-    ).join('');
-    return `<div style="display:block;width:100%;margin:0 0 1.4rem 0;padding-bottom:1rem;border-bottom:1px solid #e0e4ef;clear:both;overflow:hidden;">
-      <div style="font-size:${fs}px;line-height:1.9;margin-bottom:8px;color:#1a1a2e;display:block;width:100%;font-weight:500;">
-        <strong style="color:#1e3a8a;">${i+1}.</strong> ${item.text}
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;padding-right:16px;margin-top:6px;">${optHtml}</div>
-    </div>`;
-  }).join('');
-
-  const qBlock = `<div style="display:block;width:100%;">${qItems}</div>`;
-
-  return `<div class="exam-paper" id="paper-${idx}">
-    ${header}
-    ${student}
-    ${instructions}
-    ${qBlock}
-  </div>`;
-}
-
-// ─── ANSWER KEYS ───
-function renderAllAnswerKeys() {
-  const container = document.getElementById('answer-keys-content');
-  container.innerHTML = models.map((m, mi) => {
-    const grid = m.questions.map((q,i) =>
-      `<div class="ans-item" style="background:#f0f4ff;border:1px solid #d0d8f0;">
-        <div class="ans-qnum" style="color:#6b7280;font-size:11px;">${i+1}</div>
-        <div class="ans-val" style="color:#1e3a8a;font-size:18px;font-weight:700;">${q.correctLabel}</div>
-      </div>`
-    ).join('');
-    return `<div style="margin-bottom:2rem;">
-      <div style="font-size:15px;font-weight:700;margin-bottom:.75rem;color:var(--text);display:flex;align-items:center;gap:8px;">
-        <span style="background:${design.headerBg};color:${design.headerText};padding:4px 14px;border-radius:20px;font-size:13px;">${m.name}</span>
-        ${examCfg.subject} — ${m.questions.length} سؤال
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:8px;">${grid}</div>
-    </div>`;
-  }).join('');
-}
-
-// ─── SHARED: build full A4 HTML for one model ───
-function buildA4Html(model, includeAnswerKey) {
-  const fs = 13; // 13px ≈ 10pt — standard exam font
-  const hBg = design.headerBg;
-  const hTx = design.headerText;
-  const subj = examCfg.subject || '';
-  const inst  = examCfg.institution || '';
-
-  const headerHtml = `
-    <div style="background:${hBg};color:${hTx};padding:14px 20px;text-align:center;margin-bottom:12px;">
-      <div style="font-size:13pt;font-weight:700;">${inst}</div>
-      <div style="font-size:17pt;font-weight:900;font-family:'Amiri',serif;margin:4px 0;">امتحان مادة: ${subj}</div>
-      <div style="font-size:10pt;opacity:.9;">الزمن: ${examCfg.duration} دقيقة &nbsp;|&nbsp; الدرجة: ${examCfg.grade} &nbsp;|&nbsp; ${examCfg.date||''}</div>
-      <div style="margin-top:6px;display:inline-block;background:rgba(255,255,255,.25);padding:2px 18px;border-radius:20px;font-size:11pt;font-weight:700;">النموذج: ${model.letter}</div>
-    </div>`;
-
-  const studentHtml = `
-    <table style="width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:10px;">
-      <tr>
-        <td style="padding:4px 8px;border-bottom:1px solid #333;width:50%;">اسم الطالب: _______________________</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #333;">رقم الجلوس: ________________</td>
-      </tr>
-      <tr>
-        <td style="padding:4px 8px;border-bottom:1px solid #333;">الشعبة / الفصل: __________________</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #333;">التاريخ: ${examCfg.date||'_______________'}</td>
-      </tr>
-    </table>`;
-
-  const instrHtml = examCfg.instructions
-    ? `<div style="background:#f5f7ff;border:1px solid #c8d0f0;border-radius:6px;padding:7px 12px;margin-bottom:10px;font-size:9.5pt;color:#333;line-height:1.7;"><strong>التعليمات:</strong> ${examCfg.instructions}</div>`
-    : '';
-
-  const questionsHtml = model.questions.map((item, i) => {
-    const opts2 = item.choices.map(c =>
-      `<td style="width:50%;padding:2px 8px;font-size:9.5pt;color:#333;vertical-align:top;">
-        <span style="font-weight:700;color:#1a1a2e;">${c.label})</span> ${c.val}
-      </td>`
-    );
-    const rows = [];
-    for (let r=0; r<opts2.length; r+=2) {
-      rows.push(`<tr>${opts2[r]||'<td></td>'}${opts2[r+1]||'<td></td>'}</tr>`);
-    }
-    return `
-      <div style="margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid #dde2ee;page-break-inside:avoid;">
-        <div style="font-size:10.5pt;line-height:1.75;color:#1a1a2e;margin-bottom:4px;">
-          <strong style="color:${hBg};">${i+1}.</strong> ${item.text}
-        </div>
-        <table style="width:100%;border-collapse:collapse;margin-right:12px;">${rows.join('')}</table>
-      </div>`;
-  }).join('');
-
-  // Page number via CSS counter
-  const pageCounterStyle = `
-    @page { size: A4; margin: 18mm 20mm 20mm 20mm; }
-    @page { @bottom-center { content: "صفحة " counter(page) " من " counter(pages); font-family:'Cairo',sans-serif; font-size:9pt; color:#666; } }
-    body { counter-reset: page; }
-  `;
-
-  let answerKeyHtml = '';
-  if (includeAnswerKey) {
-    const cells = model.questions.map((q,i) =>
-      `<td style="text-align:center;border:1px solid #c0c8e0;padding:6px 4px;width:52px;">
-        <div style="font-size:8.5pt;color:#666;">${i+1}</div>
-        <div style="font-size:13pt;font-weight:700;color:${hBg};">${q.correctLabel}</div>
-      </td>`
-    );
-    const keyRows = [];
-    for (let r=0; r<cells.length; r+=10) keyRows.push(`<tr>${cells.slice(r,r+10).join('')}</tr>`);
-    answerKeyHtml = `
-      <div style="page-break-before:always;padding-top:12px;">
-        <div style="background:${hBg};color:${hTx};padding:10px 16px;text-align:center;margin-bottom:14px;border-radius:4px;">
-          <strong style="font-size:13pt;">ورقة الإجابات الصحيحة — ${model.name}</strong>
-          <div style="font-size:10pt;opacity:.85;">مادة: ${subj} | ${model.questions.length} سؤال</div>
-        </div>
-        <table style="border-collapse:collapse;width:100%;">${keyRows.join('')}</table>
-      </div>`;
-  }
-
-  return `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap');
-    ${pageCounterStyle}
-    * { box-sizing:border-box; margin:0; padding:0; }
-    body { font-family:'Cairo',sans-serif; background:#fff; color:#1a1a2e; direction:rtl; font-size:${fs}px; }
-    @media print {
-      body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    }
-  </style>
-</head>
-<body>
-  ${headerHtml}
-  ${studentHtml}
-  ${instrHtml}
-  ${questionsHtml}
-  ${answerKeyHtml}
-</body>
-</html>`;
-}
-
-// ─── EXPORT PDF ZIP ───
-async function exportAllPDF() {
-  if (!models.length) { showToast('لا توجد نماذج بعد', 'error'); return; }
-  showToast('⏳ جاري إنشاء ملفات PDF...', '');
-  const zip = new JSZip();
-  const folder = zip.folder(`نماذج_${examCfg.subject||'امتحان'}`);
-  const windows = [];
-
-  // Open each model in a hidden iframe, print to PDF is manual — instead we package HTML files
-  // that are print-ready A4 (user opens and prints/saves as PDF from browser)
-  // For true ZIP with PDF we encode each as HTML-in-ZIP (print-ready)
-  models.forEach((m, i) => {
-    const html = buildA4Html(m, opts.answerKey);
-    folder.file(`${m.name}.html`, html);
-  });
-
-  // Also add a combined file
-  let combinedHtml = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap');
-    @page{size:A4;margin:18mm 20mm 20mm 20mm;}
-    @page{@bottom-center{content:"صفحة " counter(page);font-family:'Cairo',sans-serif;font-size:9pt;color:#666;}}
-    body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#1a1a2e;}
-    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-    .model-section{page-break-after:always;}
-  </style></head><body>`;
-  models.forEach((m,i) => {
-    const inner = buildA4Html(m, opts.answerKey)
-      .replace(/<!DOCTYPE.*?<body[^>]*>/s,'')
-      .replace(/<\/body>.*$/s,'');
-    combinedHtml += `<div class="model-section">${inner}</div>`;
-  });
-  combinedHtml += '</body></html>';
-  folder.file(`كل_النماذج_مجمعة.html`, combinedHtml);
-
-  const blob = await zip.generateAsync({type:'blob'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `نماذج_PDF_${examCfg.subject||'امتحان'}.zip`;
-  a.click();
-  showToast('✅ تم تنزيل ZIP — افتح كل ملف HTML واطبعه كـ PDF', 'success');
-}
-
-// ─── EXPORT WORD ZIP ───
-async function exportAllWord() {
-  if (!models.length) { showToast('لا توجد نماذج بعد', 'error'); return; }
-  showToast('⏳ جاري إنشاء ملفات Word...', '');
-  const zip = new JSZip();
-  const folder = zip.folder(`نماذج_${examCfg.subject||'امتحان'}`);
-  const hBg = design.headerBg;
-  const hTx = design.headerText;
-
-  models.forEach((m) => {
-    const questionsDocHtml = m.questions.map((item, i) => {
-      const pairs = [];
-      for (let r=0; r<item.choices.length; r+=2) {
-        const c1 = item.choices[r];
-        const c2 = item.choices[r+1];
-        pairs.push(`<tr>
-          <td width="50%" style="padding:2pt 6pt;font-size:10pt;">${c1?`<b>${c1.label})</b> ${c1.val}`:''}</td>
-          <td width="50%" style="padding:2pt 6pt;font-size:10pt;">${c2?`<b>${c2.label})</b> ${c2.val}`:''}</td>
-        </tr>`);
-      }
-      return `<p style="margin:0 0 4pt 0;font-size:10.5pt;line-height:1.75;"><b style="color:${hBg};">${i+1}.</b> ${item.text}</p>
-      <table width="100%" style="margin-right:10pt;border-collapse:collapse;margin-bottom:8pt;">${pairs.join('')}</table>
-      <hr style="border:none;border-top:1px solid #dde;margin:0 0 6pt 0;">`;
-    }).join('');
-
-    let ansKeyHtml = '';
-    if (opts.answerKey) {
-      const cells = m.questions.map((q,i) =>
-        `<td style="text-align:center;border:1px solid #c0c8e0;padding:4pt;width:45pt;">
-          <div style="font-size:8pt;color:#666;">${i+1}</div>
-          <div style="font-size:13pt;font-weight:700;color:${hBg};">${q.correctLabel}</div>
-        </td>`
-      );
-      const keyRows = [];
-      for (let r=0; r<cells.length; r+=10) keyRows.push(`<tr>${cells.slice(r,r+10).join('')}</tr>`);
-      ansKeyHtml = `<br><br>
-        <div style="page-break-before:always;">
-          <h2 style="text-align:center;background:${hBg};color:${hTx};padding:8pt;font-size:13pt;">ورقة الإجابات — ${m.name}</h2>
-          <table style="border-collapse:collapse;width:100%;margin-top:12pt;">${keyRows.join('')}</table>
-        </div>`;
-    }
-
-    const docHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:w="urn:schemas-microsoft-com:office:word"
-      xmlns="http://www.w3.org/TR/REC-html40">
-    <head><meta charset="utf-8">
-    <style>
-      @page Section1 {
-        size:21cm 29.7cm;
-        margin:18mm 20mm 20mm 20mm;
-        mso-header-margin:10mm;
-        mso-footer-margin:10mm;
-        mso-page-numbers:1;
-      }
-      div.Section1 { page:Section1; }
-      body { font-family:'Arial Unicode MS',Arial,sans-serif; direction:rtl; font-size:10pt; }
-      p { margin:0 0 3pt 0; }
-    </style>
-    </head>
-    <body dir="rtl">
-    <div class="Section1">
-      <div style="background:${hBg};color:${hTx};padding:10pt;text-align:center;margin-bottom:10pt;">
-        <div style="font-size:13pt;font-weight:700;">${examCfg.institution||''}</div>
-        <div style="font-size:17pt;font-weight:900;">امتحان مادة: ${examCfg.subject||''}</div>
-        <div style="font-size:10pt;">الزمن: ${examCfg.duration} دقيقة | الدرجة: ${examCfg.grade} | ${examCfg.date||''}</div>
-        <div style="font-size:11pt;font-weight:700;">النموذج: ${m.letter}</div>
-      </div>
-      <table width="100%" style="margin-bottom:8pt;"><tr>
-        <td width="50%" style="border-bottom:1pt solid #333;padding:3pt;font-size:10pt;">اسم الطالب: _______________________</td>
-        <td width="50%" style="border-bottom:1pt solid #333;padding:3pt;font-size:10pt;">رقم الجلوس: ________________</td>
-      </tr><tr>
-        <td style="border-bottom:1pt solid #333;padding:3pt;font-size:10pt;">الشعبة: __________________</td>
-        <td style="border-bottom:1pt solid #333;padding:3pt;font-size:10pt;">التاريخ: ${examCfg.date||'___'}</td>
-      </tr></table>
-      ${examCfg.instructions ? `<p style="background:#f5f7ff;border:1pt solid #c0c8e0;padding:5pt;font-size:9.5pt;margin-bottom:8pt;"><b>التعليمات:</b> ${examCfg.instructions}</p>` : ''}
-      ${questionsDocHtml}
-      ${ansKeyHtml}
-    </div>
-    </body></html>`;
-
-    folder.file(`${m.name}.doc`, '\ufeff' + docHtml);
-  });
-
-  const blob = await zip.generateAsync({type:'blob'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `نماذج_Word_${examCfg.subject||'امتحان'}.zip`;
-  a.click();
-  showToast('✅ تم تنزيل ZIP — كل نموذج في ملف Word منفصل', 'success');
-}
-
-// ─── EXPORT ANSWER KEYS ───
-async function exportAnswerKeys() {
-  if (!models.length) { showToast('لا توجد نماذج بعد', 'error'); return; }
-  const zip = new JSZip();
-  const folder = zip.folder('أوراق_الإجابات');
-  const hBg = design.headerBg; const hTx = design.headerText;
-
-  models.forEach(m => {
-    const cells = m.questions.map((q,i) =>
-      `<td style="text-align:center;border:1px solid #c0c8e0;padding:8px 4px;width:52px;">
-        <div style="font-size:9pt;color:#666;margin-bottom:2px;">${i+1}</div>
-        <div style="font-size:15pt;font-weight:700;color:${hBg};">${q.correctLabel}</div>
-      </td>`
-    );
-    const rows = [];
-    for (let r=0; r<cells.length; r+=10) rows.push(`<tr>${cells.slice(r,r+10).join('')}</tr>`);
-    const html = `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
-      <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
-        @page{size:A4;margin:20mm;}
-        body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;}
-        @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-      </style></head><body>
-      <div style="background:${hBg};color:${hTx};padding:12px;text-align:center;margin-bottom:16px;border-radius:4px;">
-        <div style="font-size:14pt;font-weight:700;">${examCfg.institution||''}</div>
-        <div style="font-size:16pt;font-weight:900;">ورقة الإجابات — ${m.name}</div>
-        <div style="font-size:10pt;opacity:.9;">مادة: ${examCfg.subject||''} | ${m.questions.length} سؤال</div>
-      </div>
-      <table style="border-collapse:collapse;width:100%;">${rows.join('')}</table>
-    </body></html>`;
-    folder.file(`ورقة_إجابات_${m.name}.html`, html);
-  });
-
-  const blob = await zip.generateAsync({type:'blob'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `أوراق_الإجابات_${examCfg.subject||'امتحان'}.zip`;
-  a.click();
-  showToast('✅ تم تنزيل أوراق الإجابات', 'success');
-}
-
-// ─── TOAST ───
-function showToast(msg, type='') {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'toast show ' + type;
-  setTimeout(()=>t.classList.remove('show'), 3000);
-}
-</script>
 </body>
 </html>
