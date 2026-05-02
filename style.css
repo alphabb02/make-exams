@@ -468,3 +468,4 @@ tr:hover td { background: var(--bg3); }
   .stats-bar   { grid-template-columns: 1fr 1fr; }
   .form-grid   { grid-template-columns: 1fr; }
 }
+
