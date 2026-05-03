@@ -406,22 +406,16 @@ function renderExamPaper(model, idx) {
   const qItems = model.questions.map((item, i) => {
     const optHtml = item.choices.map(c => `
       <div style="display:flex;gap:6px;align-items:flex-start;font-size:${fs-1}px;color:#4a5568;margin-bottom:4px;">
-        <span style="font-weight:700;color:#2d3748;flex-shrink:0;min-width:18px;">${c.label})</span>
+        <span style="font-weight:700;color:#2d3748;flex-shrink:0;">${c.label})</span>
         <span>${c.val}</span>
       </div>`).join('');
     return `
       <div style="display:block;width:100%;margin:0 0 1.4rem 0;padding-bottom:1rem;
                   border-bottom:1px solid #e0e4ef;page-break-inside:avoid;">
-        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;
-                       min-width:26px;height:26px;border-radius:50%;
-                       background:${hBg};color:#fff;
-                       font-size:${fs-1}px;font-weight:700;flex-shrink:0;margin-top:2px;">
-            ${i+1}
-          </span>
-          <span style="font-size:${fs}px;line-height:1.9;color:#1a1a2e;font-weight:500;">${item.text}</span>
+        <div style="font-size:${fs}px;line-height:1.9;margin-bottom:8px;color:#1a1a2e;font-weight:500;">
+          <strong style="color:${hBg};">${i+1}.</strong> ${item.text}
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;padding-right:36px;">${optHtml}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;padding-right:16px;">${optHtml}</div>
       </div>`;
   }).join('');
 
@@ -515,16 +509,10 @@ function buildQuestionPaperHtml(model) {
         </td></tr>`);
     }
     return `<div class="q-block" style="margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid #dde2ee;">
-      <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:4px;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;
-                     min-width:22px;height:22px;border-radius:50%;
-                     background:${hBg};color:#fff;
-                     font-size:8.5pt;font-weight:700;flex-shrink:0;margin-top:2px;">
-          ${i+1}
-        </span>
-        <span style="font-size:10.5pt;line-height:1.75;color:#1a1a2e;">${item.text}</span>
+      <div style="font-size:10.5pt;line-height:1.75;color:#1a1a2e;margin-bottom:4px;">
+        <strong style="color:${hBg};">${i+1}.</strong> ${item.text}
       </div>
-      <table style="width:100%;border-collapse:collapse;margin-right:30px;">${pairs.join('')}</table>
+      <table style="width:100%;border-collapse:collapse;margin-right:8px;">${pairs.join('')}</table>
     </div>`;
   }).join('');
 
@@ -601,16 +589,10 @@ function buildAnswerSheetHtml(model) {
     for (let r = 0; r < opts2.length; r += 2)
       rows.push(`<tr>${opts2[r]||'<td></td>'}${opts2[r+1]||'<td></td>'}</tr>`);
     return `<div class="q-block" style="margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid #dde2ee;">
-      <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:4px;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;
-                     min-width:22px;height:22px;border-radius:50%;
-                     background:${hBg};color:#fff;
-                     font-size:8.5pt;font-weight:700;flex-shrink:0;margin-top:2px;">
-          ${i+1}
-        </span>
-        <span style="font-size:10.5pt;line-height:1.75;color:#1a1a2e;">${item.text}</span>
+      <div style="font-size:10.5pt;line-height:1.75;color:#1a1a2e;margin-bottom:4px;">
+        <strong style="color:${hBg};">${i+1}.</strong> ${item.text}
       </div>
-      <table style="width:100%;border-collapse:collapse;margin-right:30px;">${rows.join('')}</table>
+      <table style="width:100%;border-collapse:collapse;margin-right:8px;">${rows.join('')}</table>
     </div>`;
   }).join('');
 
@@ -740,16 +722,9 @@ async function exportAllWord() {
           <td width="50%" style="padding:2pt 6pt;font-size:10pt;">${c2 ? `<b>${c2.label})</b> ${c2.val}` : ''}</td>
         </tr>`);
       }
-      return `<table width="100%" style="border-collapse:collapse;margin-bottom:6pt;"><tr>
-        <td width="22pt" valign="top" style="padding:0 6pt 0 0;">
-          <div style="background:${hBg};color:#fff;text-align:center;border-radius:11pt;
-                      font-size:9pt;font-weight:700;padding:2pt;min-width:18pt;">${i+1}</div>
-        </td>
-        <td valign="top">
-          <p style="margin:0 0 4pt;font-size:10.5pt;line-height:1.75;">${item.text}</p>
-          <table width="100%" style="border-collapse:collapse;margin-bottom:6pt;">${pairs.join('')}</table>
-          <hr style="border:none;border-top:1px solid #dde;margin:0 0 5pt;">
-        </td></tr></table>`;
+      return `<p style="margin:0 0 4pt;font-size:10.5pt;line-height:1.75;"><b style="color:${hBg};">${i+1}.</b> ${item.text}</p>
+        <table width="100%" style="border-collapse:collapse;margin-bottom:8pt;">${pairs.join('')}</table>
+        <hr style="border:none;border-top:1px solid #dde;margin:0 0 5pt;">`;
     }).join('');
 
     let fillTable = '';
@@ -783,16 +758,9 @@ async function exportAllWord() {
         };
         pairs.push(`<tr>${cell(c1)}${cell(c2)}</tr>`);
       }
-      return `<table width="100%" style="border-collapse:collapse;margin-bottom:6pt;"><tr>
-        <td width="22pt" valign="top" style="padding:0 6pt 0 0;">
-          <div style="background:${hBg};color:#fff;text-align:center;border-radius:11pt;
-                      font-size:9pt;font-weight:700;padding:2pt;min-width:18pt;">${i+1}</div>
-        </td>
-        <td valign="top">
-          <p style="margin:0 0 4pt;font-size:10.5pt;line-height:1.75;">${item.text}</p>
-          <table width="100%" style="border-collapse:collapse;margin-bottom:6pt;">${pairs.join('')}</table>
-          <hr style="border:none;border-top:1px solid #dde;margin:0 0 5pt;">
-        </td></tr></table>`;
+      return `<p style="margin:0 0 4pt;font-size:10.5pt;line-height:1.75;"><b style="color:${hBg};">${i+1}.</b> ${item.text}</p>
+        <table width="100%" style="border-collapse:collapse;margin-bottom:8pt;">${pairs.join('')}</table>
+        <hr style="border:none;border-top:1px solid #dde;margin:0 0 5pt;">`;
     }).join('');
 
     const keyCells = m.questions.map((q,i) =>
