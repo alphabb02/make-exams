@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مولّد نماذج الامتحانات</title>
+
+  <!-- External libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- MathJax — renders LaTeX, Unicode math, and auto-detected expressions -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath:  [['$','$'], ['\\(','\\)']],
+        displayMath: [['$$','$$'], ['\\[','\\]']],
+        packages: {'[+]': ['ams','boldsymbol']},
+        processEscapes: true
+      },
+      options: {
+        skipHtmlTags: ['script','noscript','style','textarea','pre']
+      },
+      startup: { typeset: false }   // we call typesetMath() manually per element
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     HEADER / NAVIGATION
+══════════════════════════════════════ -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">📝</div>
+    مولّد الامتحانات
+  </div>
+  <div class="steps-nav">
+    <button class="step-btn active" onclick="goPanel(0)" id="nav0">① الأسئلة</button>
+    <button class="step-btn"        onclick="goPanel(1)" id="nav1">② الإعدادات</button>
+    <button class="step-btn"        onclick="goPanel(2)" id="nav2">③ التصميم</button>
+    <button class="step-btn"        onclick="goPanel(3)" id="nav3">④ النماذج</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MAIN LAYOUT
+══════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">خيارات الخلط</div>
+      <div class="toggle-row">
+        خلط ترتيب الأسئلة
+        <div class="toggle on" id="tgl-shuffle-q" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="toggle-row">
+        خلط ترتيب الإجابات
+        <div class="toggle on" id="tgl-shuffle-a" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="toggle-row">
+        ضمان عدم التكرار
+        <div class="toggle on" id="tgl-unique" onclick="toggleOpt(this)"></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">مخرجات النموذج</div>
+      <div class="toggle-row">
+        رأس الورقة
+        <div class="toggle on" id="tgl-header" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="toggle-row">
+        حقول الطالب
+        <div class="toggle on" id="tgl-student" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="toggle-row">
+        رقم النموذج
+        <div class="toggle on" id="tgl-modelnum" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="toggle-row">
+        ورقة إجابات
+        <div class="toggle on" id="tgl-answerkey" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="toggle-row">
+        جدول تعبئة الإجابات
+        <div class="toggle on" id="tgl-answertable" onclick="toggleOpt(this)"></div>
+      </div>
+      <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">موضع الجدول</div>
+        <div style="display:flex;gap:6px;">
+          <button id="pos-end" onclick="setAnswerTablePos('end')"
+                  style="flex:1;padding:6px 4px;border-radius:6px;
+                         font-family:'Cairo',sans-serif;font-size:12px;font-weight:600;
+                         border:1px solid var(--accent);background:var(--accent);
+                         color:#fff;cursor:pointer;">في النهاية</button>
+          <button id="pos-start" onclick="setAnswerTablePos('start')"
+                  style="flex:1;padding:6px 4px;border-radius:6px;
+                         font-family:'Cairo',sans-serif;font-size:12px;font-weight:600;
+                         border:1px solid var(--border2);background:transparent;
+                         color:var(--text2);cursor:pointer;">في البداية</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">معلومات البنك</div>
+      <div style="font-size:13px; color:var(--text2); line-height:2;">
+        إجمالي الأسئلة: <span id="sb-total"  style="color:var(--accent); font-weight:700;">0</span><br>
+        المحاور:        <span id="sb-topics" style="color:var(--accent2);font-weight:700;">0</span><br>
+        خيارات/سؤال:   <span id="sb-avg"    style="color:var(--accent3);font-weight:700;">-</span>
+      </div>
+    </div>
+
+  </div>
+  <!-- /sidebar -->
+
+  <!-- ── CONTENT ── -->
+  <div class="content">
+
+    <!-- ════════════════════════════════
+         PANEL 0 — IMPORT QUESTIONS
+    ════════════════════════════════ -->
+    <div class="panel active" id="panel-0">
+
+      <!-- Stats row -->
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-num"   id="stat-total">0</div>
+          <div class="stat-label">إجمالي الأسئلة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num"   id="stat-topics">0</div>
+          <div class="stat-label">المحاور / المواضيع</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num"   id="stat-cols">0</div>
+          <div class="stat-label">الأعمدة المكتشفة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num"   id="stat-ready">-</div>
+          <div class="stat-label">حالة الاستيراد</div>
+        </div>
+      </div>
+
+      <!-- Upload -->
+      <div class="card">
+        <div class="card-title"><div class="icon">📂</div> استيراد بنك الأسئلة</div>
+
+        <div class="upload-zone" id="dropZone">
+          <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(event)" id="fileInput">
+          <div class="upload-icon">📊</div>
+          <h3>اسحب ملف Excel هنا أو انقر للاختيار</h3>
+          <p>يدعم xlsx, xls, csv — يكتشف الأعمدة تلقائياً</p>
+        </div>
+
+        <!-- Format hint -->
+        <div style="margin-top:1rem; padding:1rem; background:var(--bg3);
+                    border-radius:var(--radius-sm); border:1px solid var(--border);">
+          <div style="font-size:13px; font-weight:600; margin-bottom:.5rem; color:var(--text2);">
+            📋 تنسيق الملف المدعوم
+          </div>
+          <div style="font-size:12px; color:var(--text3); line-height:2.2;">
+            <strong style="color:var(--accent);">إنجليزي:</strong>
+            <span class="badge badge-blue">Question</span>
+            <span class="badge badge-blue">A</span>
+            <span class="badge badge-blue">B</span>
+            <span class="badge badge-blue">C</span>
+            <span class="badge badge-blue">D</span>
+            <span class="badge badge-green">Answer</span><br>
+            <strong style="color:var(--accent);">عربي:</strong>
+            <span class="badge badge-blue">السؤال</span>
+            <span class="badge badge-blue">أ</span>
+            <span class="badge badge-blue">ب</span>
+            <span class="badge badge-blue">ج</span>
+            <span class="badge badge-blue">د</span>
+            <span class="badge badge-green">الإجابة الصحيحة</span><br>
+            أعمدة اختيارية:
+            <span class="badge badge-warn">Topic</span>
+            <span class="badge badge-warn">Difficulty</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview table (shown after import) -->
+      <div id="preview-table" style="display:none;">
+        <div class="card">
+          <div class="card-title"><div class="icon">👁</div> معاينة الأسئلة المستوردة</div>
+          <div class="table-wrap">
+            <table id="questions-table">
+              <thead><tr id="table-head"></tr></thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:1rem; display:flex; gap:10px;">
+            <button class="btn btn-primary" onclick="goPanel(1)">التالي: إعدادات النماذج ←</button>
+            <button class="btn btn-secondary"
+                    onclick="document.getElementById('fileInput').click()">استبدال الملف</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- /panel-0 -->
+
+    <!-- ════════════════════════════════
+         PANEL 1 — EXAM SETTINGS
+    ════════════════════════════════ -->
+    <div class="panel" id="panel-1">
+      <div class="card">
+        <div class="card-title"><div class="icon">⚙️</div> إعدادات الامتحان</div>
+
+        <div class="form-grid">
+          <div class="form-row">
+            <label>اسم المادة</label>
+            <input type="text" id="subjectName" placeholder="مثال: الرياضيات" value="الرياضيات">
+          </div>
+          <div class="form-row">
+            <label>اسم المؤسسة / رأس الورقة</label>
+            <input type="text" id="institution" value="وزارة التربية والتعليم">
+          </div>
+          <div class="form-row">
+            <label>عدد الأسئلة في كل نموذج</label>
+            <input type="number" id="qPerModel" min="1" max="200" value="20">
+          </div>
+          <div class="form-row">
+            <label>عدد النماذج المطلوبة</label>
+            <input type="number" id="numModels" min="1" max="26" value="4">
+          </div>
+          <div class="form-row">
+            <label>الوقت المخصص (بالدقائق)</label>
+            <input type="number" id="examDuration" value="60">
+          </div>
+          <div class="form-row">
+            <label>الدرجة الكاملة</label>
+            <input type="number" id="totalGrade" value="100">
+          </div>
+          <div class="form-row">
+            <label>الفصل / الصف</label>
+            <input type="text" id="classLevel" placeholder="مثال: الصف الثاني الثانوي">
+          </div>
+          <div class="form-row">
+            <label>تاريخ الامتحان</label>
+            <input type="text" id="examDate" placeholder="2025/6/15">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>تعليمات الامتحان</label>
+          <textarea id="instructions" rows="3">أجب عن جميع الأسئلة. لكل سؤال إجابة واحدة صحيحة فقط.</textarea>
+        </div>
+
+        <button class="btn btn-primary" onclick="goPanel(2)">التالي: تصميم الورقة ←</button>
+      </div>
+    </div>
+    <!-- /panel-1 -->
+
+    <!-- ════════════════════════════════
+         PANEL 2 — DESIGN
+    ════════════════════════════════ -->
+    <div class="panel" id="panel-2">
+      <div class="card">
+        <div class="card-title"><div class="icon">🎨</div> تصميم ورقة الامتحان</div>
+
+        <div class="form-grid">
+          <div class="form-row">
+            <label>ترتيب الأسئلة في الصفحة</label>
+            <select id="layoutCols">
+              <option value="1">عمود واحد</option>
+              <option value="2" selected>عمودان</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>حجم الخط</label>
+            <select id="fontSize">
+              <option value="12">صغير — 12px</option>
+              <option value="14" selected>متوسط — 14px</option>
+              <option value="16">كبير — 16px</option>
+            </select>
+          </div>
+
+          <!-- Header background color -->
+          <div class="form-row">
+            <label>لون خلفية الرأس</label>
+            <div class="color-row">
+              <div class="color-swatch selected" style="background:#1e3a8a" data-color="#1e3a8a" onclick="pickColor(this,'headerBg')"></div>
+              <div class="color-swatch"          style="background:#7c2d12" data-color="#7c2d12" onclick="pickColor(this,'headerBg')"></div>
+              <div class="color-swatch"          style="background:#14532d" data-color="#14532d" onclick="pickColor(this,'headerBg')"></div>
+              <div class="color-swatch"          style="background:#312e81" data-color="#312e81" onclick="pickColor(this,'headerBg')"></div>
+              <div class="color-swatch"          style="background:#1a1a2e" data-color="#1a1a2e" onclick="pickColor(this,'headerBg')"></div>
+              <div class="color-swatch"          style="background:#374151" data-color="#374151" onclick="pickColor(this,'headerBg')"></div>
+              <input type="color" id="headerBg" value="#1e3a8a"
+                     style="width:28px;height:28px;border-radius:6px;border:none;cursor:pointer;padding:2px;">
+            </div>
+          </div>
+
+          <!-- Header text color -->
+          <div class="form-row">
+            <label>لون نص الرأس</label>
+            <div class="color-row">
+              <div class="color-swatch selected" style="background:#ffffff;border:1px solid #ccc"
+                   data-color="#ffffff" onclick="pickColor(this,'headerText')"></div>
+              <div class="color-swatch" style="background:#fbbf24"
+                   data-color="#fbbf24" onclick="pickColor(this,'headerText')"></div>
+              <div class="color-swatch" style="background:#f0f4ff;border:1px solid #ccc"
+                   data-color="#f0f4ff" onclick="pickColor(this,'headerText')"></div>
+              <input type="color" id="headerText" value="#ffffff"
+                     style="width:28px;height:28px;border-radius:6px;border:none;cursor:pointer;padding:2px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Live preview -->
+        <div style="margin-top:1.5rem; margin-bottom:.75rem; font-size:14px; font-weight:600; color:var(--text2);">
+          معاينة رأس الورقة:
+        </div>
+        <div style="border-radius:10px; overflow:hidden; border:1px solid var(--border);">
+          <div id="preview-header" style="background:#1e3a8a; color:#fff; padding:1.5rem; text-align:center;">
+            <div style="font-size:16px; font-weight:700; margin-bottom:4px;" id="prev-institution">وزارة التربية والتعليم</div>
+            <div style="font-size:22px; font-weight:900;" id="prev-subject">امتحان مادة: الرياضيات</div>
+            <div style="font-size:13px; opacity:.8; margin-top:4px;">الزمن: 60 دقيقة | الدرجة: 100</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button class="btn btn-primary btn-lg" id="gen-btn" onclick="generateModels()">
+            <div class="spinner" id="gen-spinner"></div>
+            <span>✨ توليد النماذج الآن</span>
+          </button>
+          <button class="btn btn-secondary" onclick="goPanel(1)">← العودة</button>
+        </div>
+      </div>
+    </div>
+    <!-- /panel-2 -->
+
+    <!-- ════════════════════════════════
+         PANEL 3 — MODELS & EXPORT
+    ════════════════════════════════ -->
+    <div class="panel" id="panel-3">
+
+      <!-- Export bar -->
+      <div class="export-bar">
+        <div>
+          <h3>✅ تم التوليد بنجاح</h3>
+          <div style="font-size:13px; color:var(--text2);" id="gen-summary"></div>
+        </div>
+        <div class="export-btns">
+          <button class="btn btn-primary"   onclick="exportAllPDF()">📄 PDF — ملف مضغوط</button>
+          <button class="btn btn-secondary" onclick="exportAllWord()">📝 Word — ملف مضغوط</button>
+          <button class="btn btn-success"   onclick="exportAnswerKeys()">✔️ أوراق الإجابات</button>
+        </div>
+      </div>
+
+      <!-- Model tabs -->
+      <div class="exam-tabs" id="model-tabs"></div>
+
+      <!-- Preview area -->
+      <div id="model-view"></div>
+
+      <!-- Answer keys view -->
+      <div id="answer-key-view" style="display:none;">
+        <div class="card">
+          <div class="card-title"><div class="icon">✔️</div> أوراق الإجابات الصحيحة</div>
+          <div id="answer-keys-content"></div>
+        </div>
+      </div>
+
+    </div>
+    <!-- /panel-3 -->
+
+  </div>
+  <!-- /content -->
+
+</div>
+<!-- /main -->
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<!-- App logic -->
+<script src="app.js"></script>
+
+</body>
+</html>
