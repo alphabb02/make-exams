@@ -133,6 +133,18 @@
                      border:1px solid var(--border2);background:transparent;color:var(--text2);">أخيراً</button>
     </div>
 </div>
+<!-- Answer sheet style -->
+        <div class="form-row" style="margin-top:1.5rem;padding:1rem;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);">
+          <label style="display:block;margin-bottom:.5rem;font-weight:600;">📋 نمط ورقة الإجابات</label>
+          <select id="answerStyle" onchange="setAnswerStyle()" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);font-size:14px;cursor:pointer;">
+            <option value="normal">جدول - تعبئة اجابات</option>
+            <option value="highlighted">   جدول تظليل اجابات (جدول مسح ضوئي)</option>
+          </select>
+          <p style="font-size:12px;color:var(--text3);margin-top:.5rem;line-height:1.6;">
+            • <strong>جدول عادي:</strong> لطباعة الورقة العادية<br>
+            • <strong>نموذج OMR:</strong> دوائر مملوءة للإجابات الصحيحة (سهل المسح الضوئي)
+          </p>
+        </div>
     </div>
 
     <div class="sidebar-section">
@@ -143,6 +155,7 @@
         خيارات/سؤال:   <span id="sb-avg"    style="color:var(--accent3);font-weight:700;">-</span>
       </div>
     </div>
+
 
   </div>
   <!-- /sidebar -->
@@ -406,18 +419,7 @@
           </div>
         </div>
 
-        <!-- Answer sheet style -->
-        <div class="form-row" style="margin-top:1.5rem;padding:1rem;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);">
-          <label style="display:block;margin-bottom:.5rem;font-weight:600;">📋 نمط ورقة الإجابات</label>
-          <select id="answerStyle" onchange="setAnswerStyle()" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);font-size:14px;cursor:pointer;">
-            <option value="normal">جدول - تعبئة اجابات</option>
-            <option value="highlighted">   جدول تظليل اجابات (جدول مسح ضوئي)</option>
-          </select>
-          <p style="font-size:12px;color:var(--text3);margin-top:.5rem;line-height:1.6;">
-            • <strong>جدول عادي:</strong> لطباعة الورقة العادية<br>
-            • <strong>نموذج OMR:</strong> دوائر مملوءة للإجابات الصحيحة (سهل المسح الضوئي)
-          </p>
-        </div>
+        
 
         <!-- Live preview -->
         <div style="margin-top:1.5rem; margin-bottom:.75rem; font-size:14px; font-weight:600; color:var(--text2);">
